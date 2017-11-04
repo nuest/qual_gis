@@ -5,6 +5,7 @@
 # !!!!!change DB directory !!!!
 
 # !!!!!requires internet connection !!!!
+# test push
 
 print("spatial textmining - 1st author")
 #************
@@ -12,13 +13,13 @@ print("spatial textmining - 1st author")
 #************
 #Database & Data handling
 library(RODBC) # Database
-library(dplyr) 
+library(dplyr)
 library(plotly)
 #TextMine
 library(tidytext) #
 library(tidyr) #
 library(purrr) #
-library(readr) 
+library(readr)
 library(widyr) # Correlation must be installed via devtools ("dgrtwo/widyr")
 library(stringr) #
 #Visual & Plotting
@@ -156,21 +157,21 @@ clean_text_org <- locAbs %>%
 y = 0
 j = 1995
 for (j in c(2010,2012,2015,2018)){
-  clean_text<-  clean_text_org%>% 
+  clean_text<-  clean_text_org%>%
     filter(y < j)
-  
-  
-  
+
+
+
   y = y +1
   print(y)
   print(j)
-  
+
   #removing stopwords and custom words-----
   print("start removing")
   clean_text <- transform(clean_text, a = as.character(a))
   #clean_text <- clean_text[complete.cases(clean_text$a),] # remove NAs caused by spliting the country IDs
-  
-  
+
+
   LocAbs_words <- clean_text %>%
     unnest_tokens(word,a)%>%    # schreibe alle Worte in neue Zeile behalte dabei LandID
     filter(str_detect(word, "[a-z']$"),
@@ -203,53 +204,53 @@ for (j in c(2010,2012,2015,2018)){
            !str_detect(word, "^introduction"),
            !word %in% stop_words$word) %>%
     count(c, word, sort = TRUE)     # zähle Worte, abs muss dabei chr sein transform nicht vergessen
-  
+
 
   #total words and titel ----
-  
-  
+
+
   total_words <- LocAbs_words %>%
     group_by(c) %>%
     summarize(total = sum(n))
-  
+
   total_titel <- clean_text %>%    # zähle Veröffentlichung pro land
     group_by(t) %>%
     count(c,t, sort = TRUE) %>%
     group_by(c) %>%
-    summarize(total_titel = sum(n)) 
-  
+    summarize(total_titel = sum(n))
+
   total_titel <- left_join(total_titel, total_words) #join for popup Nr. of Papers and Words
-  
+
   LocAbs_words <- left_join(LocAbs_words, total_words)
   LocAbs_words <- left_join(LocAbs_words, total_titel)
-  
-  
+
+
   #************
   #geocode the countries ----
   #********
   colnames(LocAbs_words)[1] <- "country"
-  
+
   geo1<- as.data.frame(table(LocAbs_words$country))           # get country names
   geo <- geocode(as.character(geo1$Var1), output = c("more")) # geocode them
   LocAbs_words <- left_join(LocAbs_words, geo)
-  
+
   colnames(geo1)[1] <- "name" #change for later joining
-  
+
   print("geoccode done")
-  ##words by country 
+  ##words by country
   words_by_country <- LocAbs_words %>%
     count(country, word,n, sort = TRUE) %>%
-    arrange(desc(country, n)) 
-  
-  
+    arrange(desc(country, n))
+
+
   #**********************************************************
   #tf-idf-------------------------------
   #**********************************************************
   # berechnet tf-idf für jedes Worte und gruppiert dabei nach LänderID
-  
-  
+
+
   tf_idf <- LocAbs_words %>%
-    
+
     bind_tf_idf(word, country, n) %>%
     arrange(desc(tf_idf))
   tf_idf
@@ -257,28 +258,28 @@ for (j in c(2010,2012,2015,2018)){
   # Join with words by country to identify most important words by tf idf
   colnames(tf_idf)[9] <- "name"
   tf_idf_base <- left_join(words_by_country, tf_idf)
-  
+
   tf_idf_word <- data.frame(name = tf_idf_base$country,            #join the tf_idf
                             word = as.character(tf_idf_base$word),
                             tf_idf = tf_idf_base$tf_idf)
-  
+
   tf_idf_word <- transform(tf_idf_word, word = as.character(word)) #if not it wont work because words in the list just factors
-  
+
   tf_idf_word <- tf_idf_word %>%  # tf_id_word is needed for verticies popups
     filter(tf_idf > 0.003) %>%    # Popups shows just words which have a tf_idf over 0.003
     arrange(desc(name,tf_idf))
-  
+
   tf_idf_word[3] <- NULL
-  
+
   tf_idf_word <- tf_idf_word %>%
     nest(word)
-  
+
   print("tf_idf join done")
   #**********
   # pairweis pearson Cor-----
   #**********
-  
-  
+
+
   ###new with filter tf_idf
   #working cor
   LocAbs_cors<- tf_idf %>%
@@ -286,7 +287,7 @@ for (j in c(2010,2012,2015,2018)){
     filter(tf_idf > 0.0009) %>%# filter tf_idf to remove unimportant words
     pairwise_cor(country, word,n, sort = TRUE)
   print("cor done")
-  
+
   ## new word count after tf_idf filter
   ttl_word2<- tf_idf %>%
     filter(tf_idf > 0.0009)%>%
@@ -294,20 +295,20 @@ for (j in c(2010,2012,2015,2018)){
     group_by(country) %>%
     summarize(total2= sum(nn))
   colnames(ttl_word2)[1]<- "name"
-  
+
   tf_idf_word <- left_join(tf_idf_word, ttl_word2)
   #************
   #Data for Plot-----
   #************
-  
+
   colnames(LocAbs_cors)[1] <- "country"
   colnames(LocAbs_cors)[2] <- "country2"
-  
+
   LocAbs_cors <- left_join(LocAbs_cors, geo) ####Spatial Info of Corellations
-  
-  
-  
-  df <- data.frame(from = LocAbs_cors$country, 
+
+
+
+  df <- data.frame(from = LocAbs_cors$country,
                    to =LocAbs_cors$country2,
                    correlation = LocAbs_cors$correlation,
                    cor = LocAbs_cors$correlation,
@@ -316,8 +317,8 @@ for (j in c(2010,2012,2015,2018)){
                    lat = LocAbs_cors$lat)
   df <- df[complete.cases(df),]
   df <- df[!duplicated(df[,3]),]
-  
-  
+
+
   df$weight[df$correlation <0.4] <-0.2
   df$weight[df$correlation >0.5] <-0.5
   df$weight[df$correlation > 0.5] <-2
@@ -325,44 +326,44 @@ for (j in c(2010,2012,2015,2018)){
   df$weight[df$correlation > 0.7] <-10
   df$weight[df$correlation > 0.8] <-12.5
   df$weight[df$correlation > 0.9] <-17
-  
-  
+
+
   df$cor[df$correlation > 0.4] <-0.4
   df$cor[df$correlation > 0.5] <-0.5
   df$cor[df$correlation > 0.6] <-0.6
   df$cor[df$correlation > 0.7] <-0.7
   df$cor[df$correlation > 0.8] <-0.8
   df$cor[df$correlation > 0.9] <-0.9
-  
+
   df <- df[!(df$cor < 0.4),]
-  
+
   print("df done")
   meta <- data.frame(name = LocAbs_cors$country,
                      lon = LocAbs_cors$lon,
                      lat = LocAbs_cors$lat)
-  
+
   meta <- meta[complete.cases(meta),]
-  meta <- meta[!duplicated(meta),]  
-  
+  meta <- meta[!duplicated(meta),]
+
   lost <- data_frame(name = c("Ireland", "Czech Republic", "Denmark", "Finland","Austria", "Bangladesh"),
                      lon = c(-7.651600,15.268294,9.150484,25.768525,15.617265, 89.802567 ),
                      lat = c(53.422047,49.863959, 55.656755, 62.698190, 47.907434,23.136735))
   meta <- rbind(meta, lost)
-  
+
   colnames(total_titel)[1] <- "name"
   meta <- left_join(meta, total_titel)  # geo1 Häufigkeit der Länder in Freq
-  
+
   meta <- left_join(meta, tf_idf_word) # data for vert titelfreq
   meta <- meta[!duplicated(meta$name),]
-  
+
   print("meta done")
   #********
   #igraph----
   #******
   g <- graph.data.frame(df, directed = FALSE, vertices = meta)
   lo <- layout.norm(as.matrix(meta[,2:3]))
-  
-  
+
+
   #*********
   #Leaflet Map------
   #*********
@@ -375,10 +376,10 @@ for (j in c(2010,2012,2015,2018)){
     # data 2010------
     #*******
     edges10 <- gg10$edges
-    
+
     edges10 <- lapply(1:nrow(edges10), function(i) {
-      as(rbind(vert10[vert10$name == edges10[i, "from"], ], 
-               vert10[vert10$name == edges10[i, "to"], ]), 
+      as(rbind(vert10[vert10$name == edges10[i, "from"], ],
+               vert10[vert10$name == edges10[i, "to"], ]),
          "SpatialLines")
     })
     for (i in seq_along(edges10)) {
@@ -387,13 +388,13 @@ for (j in c(2010,2012,2015,2018)){
     edges10 <- do.call(rbind, edges10)
     #content 2010----
     #****
-    content10_1 <- paste( 
+    content10_1 <- paste(
       "<b>",vert10$name,": ", vert10$total_titel,"Paper(s)", "</b>",
       "</br>",
       "<b>Important words: </b>",
       format(head(vert10$data)),"</br><b>", vert10$total2,
       "total words</b>") # format for a pretty print, head to limit the print
-    
+
     content10_2 <- paste("Correlation:",format(round(gg10$edges$correlation, 2), nsmall = 2),
                          "between:", gg10$edges$from, "-", gg10$edges$to)
     #***
@@ -406,33 +407,33 @@ for (j in c(2010,2012,2015,2018)){
     #data 2012-----
     #****
     edges12 <- gg12$edges
-    
+
     edges12 <- lapply(1:nrow(edges12), function(i) {
-      as(rbind(vert12[vert12$name == edges12[i, "from"], ], 
-               vert12[vert12$name == edges12[i, "to"], ]), 
+      as(rbind(vert12[vert12$name == edges12[i, "from"], ],
+               vert12[vert12$name == edges12[i, "to"], ]),
          "SpatialLines")
     })
     for (i in seq_along(edges12)) {
       edges12[[i]] <- spChFIDs(edges12[[i]], as.character(i))
     }
     edges12 <- do.call(rbind, edges12)
-    
+
     #****
-    
+
     #content 2012----
     #****
-    content12_1 <- paste( 
+    content12_1 <- paste(
       "<b>",vert12$name,": ", vert12$total_titel,"Paper(s)", "</b>",
       "</br>",
       "<b>Important words: </b>",
       format(head(vert12$data)),"</br><b>", vert12$total2,
       "total words</b>") # format for a pretty print, head to limit the print
-    
+
     content12_2 <- paste("Correlation:",format(round(gg12$edges$correlation, 2), nsmall = 2),
                          "between:", gg12$edges$from, "-", gg12$edges$to)
-    
-    
-    
+
+
+
     #*******
   }#2012
   if(y == 3){
@@ -442,44 +443,44 @@ for (j in c(2010,2012,2015,2018)){
     #data 2015-----
     #****
     edges15 <- gg15$edges
-    
+
     edges15 <- lapply(1:nrow(edges15), function(i) {
-      as(rbind(vert15[vert15$name == edges15[i, "from"], ], 
-               vert15[vert15$name == edges15[i, "to"], ]), 
+      as(rbind(vert15[vert15$name == edges15[i, "from"], ],
+               vert15[vert15$name == edges15[i, "to"], ]),
          "SpatialLines")
     })
     for (i in seq_along(edges15)) {
       edges15[[i]] <- spChFIDs(edges15[[i]], as.character(i))
     }
     edges15 <- do.call(rbind, edges15)
-    
+
     #****
     #content 2015----
     #****
-    content15_1 <- paste( 
+    content15_1 <- paste(
       "<b>",vert15$name,": ", vert15$total_titel,"Paper(s)", "</b>",
       "</br>",
       "<b>Important words: </b>",
       format(head(vert15$data)),"</br><b>", vert15$total2,
       "total words</b>") # format for a pretty print, head to limit the print
-    
+
     content15_2 <- paste("Correlation:",format(round(gg15$edges$correlation, 2), nsmall = 2),
                          "between:", gg15$edges$from, "-", gg15$edges$to)
-    
-    
+
+
     #***
   }#2015
-  if(y == 4){ 
+  if(y == 4){
     gg17 <- get.data.frame(g, "both")
     vert17 <- gg17$vertices
     coordinates(vert17) <- ~lon+lat
     #data 2017-----
     #****
     edges17 <- gg17$edges
-    
+
     edges17 <- lapply(1:nrow(edges17), function(i) {
-      as(rbind(vert17[vert17$name == edges17[i, "from"], ], 
-               vert17[vert17$name == edges17[i, "to"], ]), 
+      as(rbind(vert17[vert17$name == edges17[i, "from"], ],
+               vert17[vert17$name == edges17[i, "to"], ]),
          "SpatialLines")
     })
     for (i in seq_along(edges17)) {
@@ -489,13 +490,13 @@ for (j in c(2010,2012,2015,2018)){
     #***
     #content 2017----
     #****
-    content17_1 <- paste( 
+    content17_1 <- paste(
       "<b>",vert17$name,": ", vert17$total_titel,"Paper(s)", "</b>",
       "</br>",
       "<b>Important words: </b>",
       format(head(vert17$data)),"</br><b>", vert17$total2,
       "total words</b>") # format for a pretty print, head to limit the print
-    
+
     content17_2 <- paste("Correlation:",format(round(gg17$edges$correlation, 2), nsmall = 2),
                          "between:", gg17$edges$from, "-", gg17$edges$to)
   }#2017
@@ -503,7 +504,7 @@ for (j in c(2010,2012,2015,2018)){
 
 #Leaflet Map------
 #********
-leaflet(vert10) %>% addTiles() %>% 
+leaflet(vert10) %>% addTiles() %>%
   addPolygons(data = edges10,       # polgons to add hover labels
               weight = df$weight,
               opacity = df$cor,
@@ -511,7 +512,7 @@ leaflet(vert10) %>% addTiles() %>%
               smoothFactor = 5,
               color = "cyan", group = "2010",
               highlightOptions = highlightOptions(color = "red", weight = 12,
-                                                  bringToFront = TRUE)) %>% 
+                                                  bringToFront = TRUE)) %>%
   addCircleMarkers(data = vert10,
                    radius =vert10$total_titel/3 ,
                    col = "orangered", group = "2010",
@@ -521,27 +522,27 @@ leaflet(vert10) %>% addTiles() %>%
               opacity = df$cor,
               label = content12_2,
               smoothFactor = 5,
-              color = "cyan",group= "2012", 
+              color = "cyan",group= "2012",
               highlightOptions = highlightOptions(color = "red", weight = 12,
-                                                  bringToFront = TRUE)) %>% 
+                                                  bringToFront = TRUE)) %>%
   addCircleMarkers(data = vert12,
                    radius =vert12$total_titel/3 ,
                    col = "orangered", group = "2012",
                    popup =content12_1) %>%
-  
+
   addPolygons(data = edges15,       # polgons to add hover labels
               weight = df$weight,
               opacity = df$cor,
               label = content15_2,
               smoothFactor = 5,
-              color = "cyan",group= "2015", 
+              color = "cyan",group= "2015",
               highlightOptions = highlightOptions(color = "red", weight = 12,
-                                                  bringToFront = TRUE)) %>% 
+                                                  bringToFront = TRUE)) %>%
   addCircleMarkers(data = vert15,
                    radius =vert15$total_titel/3 ,
                    col = "orangered", group = "2015",
                    popup =content15_1) %>%
-  
+
   addPolygons(data = edges17,       # polgons to add hover labels
               weight = df$weight,
               opacity = df$cor,
@@ -549,7 +550,7 @@ leaflet(vert10) %>% addTiles() %>%
               smoothFactor = 5,
               color = "cyan",group= "2017",
               highlightOptions = highlightOptions(color = "red", weight = 12,
-                                                  bringToFront = TRUE)) %>% 
+                                                  bringToFront = TRUE)) %>%
   addCircleMarkers(data = vert17,
                    radius =vert17$total_titel/3 ,
                    col = "orangered", group = "2017",
