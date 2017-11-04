@@ -1,0 +1,11 @@
+
+DB-Access with pgAdmin:
+
+Server/host: horton.elephantsql.com
+
+User/ default db: mzsrnrwj
+
+pw: Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5
+
+
+further help: https://www.elephantsql.com/docs/pgadmin.html
