@@ -8,6 +8,7 @@ db <- "C:/Users/Eric/Documents/Gdrive/Studium/qual_gis/WOS_Literatur/Endnote_to_
 # Rechner db <- "E:/GoogleDrive/Studium/qual_gis/WOS_Literatur/Endnote_to_Citavi/Datenbank/Database_WOS.accdb"
 con <- odbcConnectAccess2007(db)
 #loading tables
+
 all <- sqlTables(con, tableType = "TABLE")$TABLE_NAME
 all2 <-sqlTables(con, tableType = "TABLE")
 #queries
