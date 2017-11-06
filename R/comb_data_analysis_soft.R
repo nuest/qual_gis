@@ -45,7 +45,7 @@ all <- sqlTables(con, tableType = "TABLE")$TABLE_NAME
 #queries
 qryRel <- "SELECT * FROM tblWOS,tblQUAL_GIS WHERE fidCitavi = idCitavi AND Qual_Context = 1 ORDER BY idCItavi "
 relevant <- sqlQuery(con, qryRel)
-
+####----
 #data
 transfer <- data.frame(w =as.character(relevant$WOS),
                        t =relevant$fidQualGIS_transfer)
@@ -210,9 +210,9 @@ meta[10:13,]$x[meta[10:13,]$x == 0] <- 2
 meta[14:16,]$x[meta[14:16,]$x == 0] <- 3
 
 meta <- cbind(meta, "y" = 0)
-meta[1:9,]$y[meta[1:9,]$y == 0] <- seq(10,150, by = 15)
-meta[10:13,]$y[meta[10:13,]$y == 0] <- seq(30,100, by = 23)
-meta[14:16,]$y[meta[14:16,]$y == 0] <- seq(30,130, by = 30) # ignore error
+meta[1:9,]$y[meta[1:9,]$y == 0] <- rev(seq(10,150, by = 15))
+meta[10:13,]$y[meta[10:13,]$y == 0] <- rev(seq(30,100, by = 23))
+meta[14:16,]$y[meta[14:16,]$y == 0] <- rev(seq(30,130, by = 30)) # ignore error
 
 meta <- cbind(meta, "col" = 0)
 meta[1:9,]$col[meta[1:9,]$col == 0] <- "grey"

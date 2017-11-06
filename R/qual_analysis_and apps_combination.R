@@ -15,25 +15,29 @@ library(stringr)
 library(plotly)
 library(ggraph)
 library(igraph)
+library(RPostgreSQL)
+
 
 #******
 #Database------
 #******
+# loads the PostgreSQL driver
+drv <- dbDriver("PostgreSQL")
 
-# !!!!!change DB directory !!!!
-db <- "C:/Users/Eric/Desktop/Abgabe/Database_WOS.accdb"  # change to postgres!
-con <- odbcConnectAccess2007(db)
+# creates a connection to the postgres database
+# note that "con" will be used later in each connection to the database
+con <- dbConnect(drv, dbname = "qual_gis",        #change con to elephantsql database
+                 host = "localhost", port = 5432,
+                 user = "postgres", password = "user")
 
+relevant <- dbGetQuery(con, "select * from wos")
+relevant2 <- dbGetQuery(con, "select * from qual_gis_main")
+colnames(relevant)[1] <- "fidCitavi"
+relevant <- left_join(relevant, relevant2)
+relevant <- relevant %>%
+  filter(Qual_Context == TRUE)
 
-#db <- "C:/Users/Eric/Desktop/BA_Backup/test/Database_WOS.accdb"
-con <- odbcConnectAccess2007(db)
-#loading tables
-all <- sqlTables(con, tableType = "TABLE")$TABLE_NAME
-
-#queries
-qryRel <- "SELECT * FROM tblWOS,tblQUAL_GIS WHERE fidCitavi = idCitavi AND Qual_Context = 1 ORDER BY idCItavi "
-relevant <- sqlQuery(con, qryRel)
-
+#qual_gis WHERE fidCitavi = idCitavi AND Qual_Context = 1 ORDER BY idCItavi
 #data
 app1 <- data.frame(w =as.character(relevant$WOS), a =str_split_fixed(relevant$fidGIS_app, ";", 3))
 
