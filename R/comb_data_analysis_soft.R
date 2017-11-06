@@ -15,8 +15,25 @@ library(ggraph)
 library(igraph)
 
 
+##Database new------
+drv <- dbDriver("PostgreSQL")
+
+# creates a connection to the postgres database
+# note that "con" will be used later in each connection to the database
+con <- dbConnect(drv, dbname = "qual_gis",        #change con to elephantsql database
+                 host = "localhost", port = 5432,
+                 user = "postgres", password = "user")
+
+relevant <- dbGetQuery(con, "select * from wos")
+relevant2 <- dbGetQuery(con, "select * from qual_gis_main")
+colnames(relevant)[1] <- "fidCitavi"
+relevant <- left_join(relevant, relevant2)
+relevant <- relevant %>%
+  filter(Qual_Context == TRUE)
+
+
 #******
-#Database------
+#Database old------
 #******
 
 db <- "C:/Users/Eric/Documents/Gdrive/Studium/qual_gis/WOS_Literatur/Endnote_to_Citavi/Datenbank/Database_WOS.accdb"

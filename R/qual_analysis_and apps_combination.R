@@ -4,8 +4,6 @@
 
 # !!!!!change DB directory !!!!
 
-
-
 #******
 #packages---------
 #******
@@ -23,7 +21,7 @@ library(igraph)
 #******
 
 # !!!!!change DB directory !!!!
-db <- "C:/Users/Eric/Desktop/Abgabe/Database_WOS.accdb"
+db <- "C:/Users/Eric/Desktop/Abgabe/Database_WOS.accdb"  # change to postgres!
 con <- odbcConnectAccess2007(db)
 
 
@@ -36,10 +34,10 @@ all <- sqlTables(con, tableType = "TABLE")$TABLE_NAME
 qryRel <- "SELECT * FROM tblWOS,tblQUAL_GIS WHERE fidCitavi = idCitavi AND Qual_Context = 1 ORDER BY idCItavi "
 relevant <- sqlQuery(con, qryRel)
 
-#data 
+#data
 app1 <- data.frame(w =as.character(relevant$WOS), a =str_split_fixed(relevant$fidGIS_app, ";", 3))
 
-qa <- data.frame(w = relevant$WOS, 
+qa <- data.frame(w = relevant$WOS,
                  year = relevant$year,
                  analysis = relevant$fidQualAnalyse)
 
@@ -98,7 +96,7 @@ total_Analyse_app <- qualApp %>%
   group_by(analysis, a) %>%
   count(analysis, sort= TRUE) %>%
   filter(n > 5)
-  
+
 total_Analyse_app <- left_join(total_Analyse_app, total_app, by = "a")
 total_Analyse_app <- left_join(total_Analyse_app, total_Analyse, by = "analysis")
 
@@ -106,7 +104,7 @@ total_Analyse_app <- left_join(total_Analyse_app, total_Analyse, by = "analysis"
 #graph data-----
 #*****
 
-df <-data.frame(from = total_Analyse_app$analysis, 
+df <-data.frame(from = total_Analyse_app$analysis,
                  to =as.character(total_Analyse_app$a),
                  weight = total_Analyse_app$n.x,
                 appweight = total_Analyse_app$n.y,
