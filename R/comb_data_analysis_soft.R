@@ -2,49 +2,40 @@
 #### GIS-Transfer- GIS - Software - Qual.-Data
 #### script for a three sited net.plot
 
+# Internet connection required for connection to the remote DB
+
+
 #******
 #packages---------
 #******
-library(RODBC)
-library(ggplot2)
-library(ggthemes)
-library(dplyr)
-library(stringr)
-library(plotly)
-library(ggraph)
-library(igraph)
-
-
-##Database new------
+pacman::p_load(ggplot2, ggthemes, tidyverse,
+               stringr, plotly, ggraph, igraph,
+               RPostgreSQL)
+#******
+#Database------
+#******
+# loads the PostgreSQL driver
 drv <- dbDriver("PostgreSQL")
 
 # creates a connection to the postgres database
 # note that "con" will be used later in each connection to the database
-con <- dbConnect(drv, dbname = "qual_gis",        #change con to elephantsql database
-                 host = "localhost", port = 5432,
-                 user = "postgres", password = "user")
+con <- dbConnect(drv, dbname = "mzsrnrwj",        #change con to elephantsql database
+                 host = "horton.elephantsql.com", port = 5432,
+                 user = "mzsrnrwj", password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
+
+
 
 relevant <- dbGetQuery(con, "select * from wos")
-relevant2 <- dbGetQuery(con, "select * from qual_gis_main")
+relevant2 <- dbGetQuery(con, "select * from main_qual_gis")
 colnames(relevant)[1] <- "fidCitavi"
 relevant <- left_join(relevant, relevant2)
 relevant <- relevant %>%
-  filter(Qual_Context == TRUE)
+  filter(Qual_Context == TRUE) %>%
+  as.tibble()
 
 
-#******
-#Database old------
-#******
 
-db <- "C:/Users/Eric/Documents/Gdrive/Studium/qual_gis/WOS_Literatur/Endnote_to_Citavi/Datenbank/Database_WOS.accdb"
-#db <- "E:/GoogleDrive/Studium/qual_gis/WOS_Literatur/Endnote_to_Citavi/Datenbank/Database_WOS.accdb"
-con <- odbcConnectAccess2007(db)
-#loading tables
-all <- sqlTables(con, tableType = "TABLE")$TABLE_NAME
 
-#queries
-qryRel <- "SELECT * FROM tblWOS,tblQUAL_GIS WHERE fidCitavi = idCitavi AND Qual_Context = 1 ORDER BY idCItavi "
-relevant <- sqlQuery(con, qryRel)
 ####----
 #data
 transfer <- data.frame(w =as.character(relevant$WOS),
