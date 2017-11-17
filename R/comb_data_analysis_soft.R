@@ -231,7 +231,7 @@ lo <- layout.norm(as.matrix(meta[,2:3]))
 ggraph(g)+
   geom_edge_link(aes(width = Combinations, alpha = Combinations), show.legend = TRUE)+
   geom_node_point(size = meta$n/5.5, col =meta$col) +
-  geom_node_text(aes(label = meta$name), col = "black", vjust = 0,hjust = 0,size = 4.5, parse = FALSE)+
+  geom_node_text(aes(label = meta$name), col = "black", vjust = 0,hjust = 0.3,size = 4.5, parse = FALSE)+
   geom_node_label(aes(label = meta$n), size = 4, parse = TRUE, vjust = 1.2) +
   theme(legend.position = "bottom")+
   theme_void()
