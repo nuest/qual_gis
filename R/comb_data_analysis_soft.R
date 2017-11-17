@@ -155,11 +155,12 @@ total_trans <- as.data.frame(total_trans)
 total_qdata <- dt_data_all %>%
   group_by(qdata) %>%
   count(qdata, sort = TRUE) %>%
-  filter(n > 5)
-
-
+  filter(n > 25)
 colnames(total_qdata)[1] <- "name"
 total_qdata<- as.data.frame(total_qdata)
+
+qdata_n <- c(total_qdata$name)
+
 
 #kombi totals----
 
@@ -180,9 +181,7 @@ total_trans_qdata <- kombi %>%
          qdata != "Diary",
          qdata != "Q-Survey")
 
-total_trans_qdata <- total_trans_qdata %>%
-  filter(n > 5) %>%
-  as.data.frame()
+total_trans_qdata <- as.data.frame(total_trans_qdata)
 colnames(total_trans_qdata)[1] <- "from"
 colnames(total_trans_qdata)[2] <- "to"
 
@@ -195,24 +194,27 @@ colnames(total_trans_qdata)[2] <- "to"
 df_tri <- rbind(total_soft_trans, total_trans_qdata)
 df_tri <- df_tri[complete.cases(df_tri$to),]
 
+df_tri <- df_tri %>%
+  filter(n > 3)
+
 meta <- bind_rows(total_qdata, total_trans, total_soft)
 levels(meta$name) <- gsub(" ", "\n", levels(meta$name))
 
 
 meta <- cbind(meta, "x" = 0)
-meta[1:10,]$x[meta[1:10,]$x == 0] <- 1
-meta[11:14,]$x[meta[11:14,]$x == 0] <- 2
-meta[15:17,]$x[meta[15:17,]$x == 0] <- 3
+meta[1:7,]$x[meta[1:7,]$x == 0] <- 1
+meta[8:11,]$x[meta[8:11,]$x == 0] <- 2
+meta[12:14,]$x[meta[12:14,]$x == 0] <- 3
 
 meta <- cbind(meta, "y" = 0)
-meta[1:10,]$y[meta[1:10,]$y == 0] <- rev(seq(10,150, by = 15))
-meta[11:14,]$y[meta[11:14,]$y == 0] <- rev(seq(30,100, by = 23))
-meta[15:17,]$y[meta[15:17,]$y == 0] <- rev(seq(30,130, by = 30)) # ignore error
+meta[1:7,]$y[meta[1:7,]$y == 0] <- rev(seq(10,150, by = 15))
+meta[8:11,]$y[meta[8:11,]$y == 0] <- rev(seq(30,100, by = 23))
+meta[12:14,]$y[meta[12:14,]$y == 0] <- rev(seq(30,130, by = 30)) # ignore error
 
 meta <- cbind(meta, "col" = 0)
-meta[1:10,]$col[meta[1:10,]$col == 0] <- "grey"
-meta[11:14,]$col[meta[11:14,]$col == 0] <- "steelblue"
-meta[15:17,]$col[meta[15:17,]$col == 0] <- "indianred"
+meta[1:7,]$col[meta[1:7,]$col == 0] <- "grey"
+meta[8:11,]$col[meta[8:11,]$col == 0] <- "steelblue"
+meta[12:14,]$col[meta[12:14,]$col == 0] <- "indianred"
 
 
 
