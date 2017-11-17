@@ -46,7 +46,7 @@ soft <- data.frame(w = relevant$WOS,
                  GIS = relevant$fidGIS)
 
 qdata <- data.frame(w = relevant$WOS,
-                    qdata = str_split_fixed(relevant$fidQualData, ";", 13))
+                    qdata = str_split_fixed(relevant$fidqualdata, ";", 7))
 
 trans_soft <- left_join(soft, transfer)
 ###************************
@@ -55,7 +55,7 @@ trans_soft <- left_join(soft, transfer)
 
 # extracting data columns and binding them into one df
 
-iterations = 13 #
+iterations = 7 #
 
 i = 1
 j = 2
@@ -74,7 +74,7 @@ for (i in 1:iterations) {
 
 
 library(data.table)
-x.n <- c(paste0("data_", 1:13))  #listing dfs
+x.n <- c(paste0("data_", 1:iterations))  #listing dfs
 x.list <- (lapply(x.n, get))    # getting dfs values
 dt_data_all <- rbindlist(x.list) # binding them in one df
 
@@ -82,8 +82,7 @@ colnames(dt_data_all)[2] <- "qdata"
 
 dt_data_all$qdata[dt_data_all$qdata == "" ] <- NA
 dt_data_all <- dt_data_all[complete.cases(dt_data_all$qdata),]
-
-
+#dt_data_all <- dt_data_all[!duplicated(dt_data_all[,1]),] # just unique wos to avoid double entries
 
 
 ###*************
@@ -103,13 +102,13 @@ trans_soft$GIS[trans_soft$GIS < 9] <- "free GIS"
 
 
 trans_soft$t[trans_soft$t == 1 ] <-  NA
-trans_soft$t[trans_soft$t == 3 ] <- "Geocoding"
+trans_soft$t[trans_soft$t == 3 ] <- "Transformation"
 trans_soft$t[trans_soft$t == 4 ] <- "Hyperlinks"
 trans_soft$t[trans_soft$t == 5 ] <- "GIS extension"
 trans_soft$t[trans_soft$t == 7 ] <- "Modelling spatial reasoning"
 
 trans_soft <- trans_soft[complete.cases(trans_soft$t),]
-# renaming dt_data_all
+# renaming dt_data_all------------
 
 dt_data_all <- transform( dt_data_all, qdata = as.character(qdata))
 
@@ -130,16 +129,16 @@ dt_data_all$qdata[dt_data_all$qdata == 36 ] <- "Q-Survey"
 dt_data_all$qdata[dt_data_all$qdata == 37 ] <- NA
 
 dt_data_all <- dt_data_all[complete.cases(dt_data_all$qdata),]
-
+##----
 #******
 
 #total Analyse & App-------
 #******
 
-kombi <- left_join(trans_soft, dt_data_all)
+kombi <- left_join(dt_data_all, trans_soft)
+kombi <- kombi[complete.cases(kombi$t),]
 
-
-# single totals
+# single totals----
 total_soft <- trans_soft %>%
   group_by(GIS) %>%
   count(GIS, sort = TRUE)
@@ -156,13 +155,15 @@ total_trans <- as.data.frame(total_trans)
 total_qdata <- dt_data_all %>%
   group_by(qdata) %>%
   count(qdata, sort = TRUE) %>%
-  filter(n > 35)
+  filter(n > 5)
+
+
 colnames(total_qdata)[1] <- "name"
 total_qdata<- as.data.frame(total_qdata)
 
-#kombi totals
+#kombi totals----
 
-total_soft_trans <- kombi %>%
+total_soft_trans <- trans_soft %>%
   group_by(GIS, t ) %>%
   count(GIS, sort= TRUE)
 total_soft_trans <- as.data.frame(total_soft_trans)
@@ -179,7 +180,9 @@ total_trans_qdata <- kombi %>%
          qdata != "Diary",
          qdata != "Q-Survey")
 
-total_trans_qdata <- as.data.frame(total_trans_qdata)
+total_trans_qdata <- total_trans_qdata %>%
+  filter(n > 5) %>%
+  as.data.frame()
 colnames(total_trans_qdata)[1] <- "from"
 colnames(total_trans_qdata)[2] <- "to"
 
@@ -187,6 +190,7 @@ colnames(total_trans_qdata)[2] <- "to"
 #*****
 #graph data-----
 #*****
+
 
 df_tri <- rbind(total_soft_trans, total_trans_qdata)
 df_tri <- df_tri[complete.cases(df_tri$to),]
@@ -196,19 +200,19 @@ levels(meta$name) <- gsub(" ", "\n", levels(meta$name))
 
 
 meta <- cbind(meta, "x" = 0)
-meta[1:9,]$x[meta[1:9,]$x == 0] <- 1
-meta[10:13,]$x[meta[10:13,]$x == 0] <- 2
-meta[14:16,]$x[meta[14:16,]$x == 0] <- 3
+meta[1:10,]$x[meta[1:10,]$x == 0] <- 1
+meta[11:14,]$x[meta[11:14,]$x == 0] <- 2
+meta[15:17,]$x[meta[15:17,]$x == 0] <- 3
 
 meta <- cbind(meta, "y" = 0)
-meta[1:9,]$y[meta[1:9,]$y == 0] <- rev(seq(10,150, by = 15))
-meta[10:13,]$y[meta[10:13,]$y == 0] <- rev(seq(30,100, by = 23))
-meta[14:16,]$y[meta[14:16,]$y == 0] <- rev(seq(30,130, by = 30)) # ignore error
+meta[1:10,]$y[meta[1:10,]$y == 0] <- rev(seq(10,150, by = 15))
+meta[11:14,]$y[meta[11:14,]$y == 0] <- rev(seq(30,100, by = 23))
+meta[15:17,]$y[meta[15:17,]$y == 0] <- rev(seq(30,130, by = 30)) # ignore error
 
 meta <- cbind(meta, "col" = 0)
-meta[1:9,]$col[meta[1:9,]$col == 0] <- "grey"
-meta[10:13,]$col[meta[10:13,]$col == 0] <- "steelblue"
-meta[14:16,]$col[meta[14:16,]$col == 0] <- "indianred"
+meta[1:10,]$col[meta[1:10,]$col == 0] <- "grey"
+meta[11:14,]$col[meta[11:14,]$col == 0] <- "steelblue"
+meta[15:17,]$col[meta[15:17,]$col == 0] <- "indianred"
 
 
 
