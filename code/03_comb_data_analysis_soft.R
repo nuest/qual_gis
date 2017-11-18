@@ -31,7 +31,7 @@ colnames(relevant)[1] <- "fidCitavi"
 relevant <- left_join(relevant, relevant2)
 relevant <- relevant %>%
   filter(Qual_Context == TRUE) %>%
-  as.tibble()
+  filter(fidQualGIS_transfer != 7) # filter out model spatial reasoning temp. solution
 
 
 
@@ -102,10 +102,10 @@ trans_soft$GIS[trans_soft$GIS < 9] <- "free GIS"
 
 
 trans_soft$t[trans_soft$t == 1 ] <-  NA
-trans_soft$t[trans_soft$t == 3 ] <- "Transformation"
+trans_soft$t[trans_soft$t == 3 ] <- "Transform."
 trans_soft$t[trans_soft$t == 4 ] <- "Hyperlinks"
 trans_soft$t[trans_soft$t == 5 ] <- "GIS extension"
-trans_soft$t[trans_soft$t == 7 ] <- "Modelling spatial reasoning"
+#trans_soft$t[trans_soft$t == 7 ] <- "Modelling spatial reasoning"
 
 trans_soft <- trans_soft[complete.cases(trans_soft$t),]
 # renaming dt_data_all------------
@@ -203,18 +203,18 @@ levels(meta$name) <- gsub(" ", "\n", levels(meta$name))
 
 meta <- cbind(meta, "x" = 0)
 meta[1:7,]$x[meta[1:7,]$x == 0] <- 1
-meta[8:11,]$x[meta[8:11,]$x == 0] <- 2
-meta[12:14,]$x[meta[12:14,]$x == 0] <- 3
+meta[8:10,]$x[meta[8:10,]$x == 0] <- 2
+meta[11:13,]$x[meta[11:13,]$x == 0] <- 3
 
 meta <- cbind(meta, "y" = 0)
 meta[1:7,]$y[meta[1:7,]$y == 0] <- rev(seq(10,150, by = 15))
-meta[8:11,]$y[meta[8:11,]$y == 0] <- rev(seq(30,100, by = 23))
-meta[12:14,]$y[meta[12:14,]$y == 0] <- rev(seq(30,130, by = 30)) # ignore error
+meta[8:10,]$y[meta[8:10,]$y == 0] <- rev(seq(65,110, by = 15))
+meta[11:13,]$y[meta[11:13,]$y == 0] <- rev(seq(70,130, by = 30)) # ignore error
 
 meta <- cbind(meta, "col" = 0)
 meta[1:7,]$col[meta[1:7,]$col == 0] <- "grey"
-meta[8:11,]$col[meta[8:11,]$col == 0] <- "steelblue"
-meta[12:14,]$col[meta[12:14,]$col == 0] <- "indianred"
+meta[8:10,]$col[meta[8:10,]$col == 0] <- "steelblue"
+meta[11:13,]$col[meta[11:13,]$col == 0] <- "indianred"
 
 
 
@@ -231,7 +231,7 @@ lo <- layout.norm(as.matrix(meta[,2:3]))
 ggraph(g)+
   geom_edge_link(aes(width = Combinations, alpha = Combinations), show.legend = TRUE)+
   geom_node_point(size = meta$n/5.5, col =meta$col) +
-  geom_node_text(aes(label = meta$name), col = "black", vjust = 0,hjust = 0.3,size = 4.5, parse = FALSE)+
+  geom_node_text(aes(label = meta$name), col = "black", vjust = 0,hjust = 0.5,size = 4.5, parse = FALSE)+
   geom_node_label(aes(label = meta$n), size = 4, parse = TRUE, vjust = 1.2) +
   theme(legend.position = "bottom")+
   theme_void()
