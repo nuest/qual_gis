@@ -44,10 +44,45 @@ df_tc$WOS <- substr(df_tc$WOS, 4, nchar(df_tc$WOS))
 df_tc$tc <- grep("^TC.*", wos_lit, value = T)
 df_tc$tc <- substr(df_tc$tc, 3, nchar(df_tc$tc))
 
-as.tibble(df_tc)
 
-#df_tc <- transform(df_tc, tc = as.numeric(tc))
-
+# joining db data with wos data
 df_all <- left_join(relevant, df_tc)
-##joing db-data and wos data
-df
+
+#data perp. for plot
+
+df_plot <- df_all %>%
+  select(year,tc)
+
+df_plot <- df_plot[order(df_plot$year,df_plot$tc),]
+
+years <- unique(df_plot$year)
+
+year_list <- list()
+j <- 1
+
+for (i in years){
+  print(i)
+  temp <- subset(df_plot, df_plot$year == i)
+  sum_tc <- sum(as.numeric(temp$tc))
+  year_list[[j]] <- assign(paste0("year",i),tibble(y = i, sum = sum_tc))
+  j = j+1
+}
+
+final <- rbind_list(year_list)
+final <- cbind(final, cumsum = cumsum(final$sum))
+
+
+#plotting
+
+p1 <- final %>%
+  filter(y < 2017) %>%
+  ggplot(aes(y, cumsum))+ geom_bar(stat = "identity", aes(fill = sum), width = 0.8) + scale_fill_gradient(high="cyan", low="red")+
+  ylab("number of Citations") + xlab("")+
+  scale_x_continuous(breaks =seq(1994,2016,2)) + scale_y_continuous(breaks = seq(0,6000, 1000))+
+  theme(plot.title = element_text(lineheight=.3, face="bold"))+
+  guides(fill=guide_legend(title= "Citations per year")) + theme(legend.position = "bottom")
+p1
+
+
+
+
