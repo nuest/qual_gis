@@ -17,9 +17,11 @@ drv <- dbDriver("PostgreSQL")
 
 # creates a connection to the postgres database
 # note that "con" will be used later in each connection to the database
-con <- dbConnect(drv, dbname = "mzsrnrwj",        #change con to elephantsql database
+con <- dbConnect(drv, dbname = "mreolgsw",        #change con to elephantsql database
                  host = "horton.elephantsql.com", port = 5432,
-                 user = "mzsrnrwj", password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
+                 user = "mreolgsw", password = "VOvgCnJaQuFBr5dZknPbyDDO1vcUpfnW")
+
+
 
 
 

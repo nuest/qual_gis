@@ -8,9 +8,10 @@ drv <- dbDriver("PostgreSQL")
 
 # creates a connection to the postgres database
 # note that "con" will be used later in each connection to the database
-con <- dbConnect(drv, dbname = "qual_gis",        #change con to elephantsql database
-                 host = "localhost", port = 5432,
-                 user = "postgres", password = "user")
+con <- dbConnect(drv, dbname = "mreolgsw",
+                 host = "horton.elephantsql.com", port = 5432,
+                 user = "mreolgsw", password = "VOvgCnJaQuFBr5dZknPbyDDO1vcUpfnW")
+
 
 
 qry <- {"select * from qual_gis_main inner join wos on fidcitavi = idcitavi where note like '%review%'"
