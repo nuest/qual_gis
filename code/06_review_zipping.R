@@ -14,7 +14,7 @@ con <- dbConnect(drv, dbname = "qual_gis",        #change con to elephantsql dat
 
 
 qry <- {"select * from qual_gis_main inner join wos on fidcitavi = idcitavi where note like '%review%'"
-  }
+}
 relevant <- dbGetQuery(con, qry)
 
 file_list <- list()
@@ -26,7 +26,7 @@ for (i in 1:NROW(relevant)){
   temp <- as.character(paste0(path, temp))
   if (temp != path){
     zip_append("reviews.zip",temp)
-    }
+  }
   setTxtProgressBar(pb, i)
 }
 close(pb)
