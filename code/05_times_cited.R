@@ -36,12 +36,12 @@ dir <- "C:/Users/Eric/Documents/Gdrive/Studium/qual_gis/WOS_Literatur/"
 pathlit <- paste0(dir, "wos_lit.txt")
 
 
-wos_lit <- readLines(pathlit)
+wos_lit <- readLines(pathlit) #read txt
 
 
-df_tc <- tibble(WOS = grep("^UT.*", wos_lit, value = T))
+df_tc <- tibble(WOS = grep("^UT.*", wos_lit, value = T)) #extract lines with wos id
 df_tc$WOS <- substr(df_tc$WOS, 4, nchar(df_tc$WOS))
-df_tc$tc <- grep("^TC.*", wos_lit, value = T)
+df_tc$tc <- grep("^TC.*", wos_lit, value = T) #extract lines with times cited
 df_tc$tc <- substr(df_tc$tc, 3, nchar(df_tc$tc))
 
 
