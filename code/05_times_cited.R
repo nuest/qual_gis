@@ -3,6 +3,10 @@
 # Internet connection required for connection to the remote DB
 
 
+#normalize citation and publications fig with whole number of cit. and pubs
+
+
+
 #******
 #packages---------
 #******
