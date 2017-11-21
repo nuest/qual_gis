@@ -54,6 +54,7 @@ con <- dbConnect(drv, dbname = "mreolgsw",
 RPostgreSQL::dbListTables(conn = con)
 qual = dbGetQuery(con, "SELECT * FROM main_qual_gis")
 wos = dbGetQuery(con, "SELECT * FROM wos")  
+dbDisconnect(conn = con)
 
 #**********************************************************
 # 4 MAPPING CLUSTERS---------------------------------------
