@@ -25,10 +25,6 @@ con <- dbConnect(drv, dbname = "mreolgsw",        #change con to elephantsql dat
                  host = "horton.elephantsql.com", port = 5432,
                  user = "mreolgsw", password = "VOvgCnJaQuFBr5dZknPbyDDO1vcUpfnW")
 
-
-
-
-
 relevant <- dbGetQuery(con, "select * from wos")
 relevant2 <- dbGetQuery(con, "select * from main_qual_gis")
 colnames(relevant)[1] <- "fidCitavi"
@@ -42,10 +38,10 @@ dir <- "C:/Users/Eric/Documents/Gdrive/Studium/qual_gis/WOS_Literatur/"
 pathlit <- paste0(dir, "wos_lit.txt")
 
 
-wos_lit <- readLines(pathlit) #read txt
+wos_lit <- readLines("https://raw.githubusercontent.com/EricKrg/qual_gis/master/wos_query/wos_lit.txt") #read txt
 
 
-df_tc <- tibble(WOS = grep("^UT.*", wos_lit, value = T)) #extract lines with wos id
+df_tc <- tibble(WOS = grep("^UT.*", wos_lit, value = TRUE)) #extract lines with wos id
 df_tc$WOS <- substr(df_tc$WOS, 4, nchar(df_tc$WOS))
 df_tc$tc <- grep("^TC.*", wos_lit, value = T) #extract lines with times cited
 df_tc$tc <- substr(df_tc$tc, 3, nchar(df_tc$tc))
@@ -88,7 +84,4 @@ p1 <- final %>%
   theme(plot.title = element_text(lineheight=.3, face="bold"))+
   guides(fill=guide_legend(title= "Citations per year")) + theme(legend.position = "bottom")
 p1
-
-
-
 
