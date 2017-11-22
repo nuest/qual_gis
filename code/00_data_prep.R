@@ -99,5 +99,5 @@ tc = tc[tc$WOS %in% wos$WOS, ]
 # 3 SAVE OUTPUT--------------------------------------------
 #**********************************************************
 
-save(qual, wos, cits, file = file.path(dir_ima, "01_input.Rdata"))
+save(qual, wos, tc, file = file.path(dir_ima, "01_input.Rdata"))
 # load(file.path(dir_ima, "01_input.Rdata"))
