@@ -38,8 +38,9 @@ con = dbConnect(drv, dbname = "mreolgsw",
                 host = "horton.elephantsql.com", port = 5432,
                 user = "mreolgsw", 
                 password = "VOvgCnJaQuFBr5dZknPbyDDO1vcUpfnW")
-wos = dbGetQuery(con, "select * from wos")
+abs_df = dbGetQuery(con, "SELECT * FROM abstract")
 qual = dbGetQuery(con, "select * from main_qual_gis")
+wos = dbGetQuery(con, "select * from wos")
 dbDisconnect(conn = con)
 
 # read in times cited
@@ -95,9 +96,30 @@ setdiff(tc$WOS, wos$WOS)
 setdiff(wos$WOS, tc$WOS)  # ok, all WOS of tc can be found in wos, perfect
 tc = tc[tc$WOS %in% wos$WOS, ]
 
+# 2.4 abstract table=======================================
+#**********************************************************
+sum(abs_df == "NA")
+# replace by true NAs
+abs_df[abs_df == "NA"] = NA
+# there is one NA in abs_df$WOS
+doi = abs_df[is.na(abs_df$WOS), "doi"]
+# any other duplicates
+abs_df[!is.na(abs_df$doi) & 
+         (duplicated(abs_df$doi) | duplicated(abs_df$doi, fromLast = TRUE)), ]
+# remove the second
+abs_df = abs_df[!(abs_df$doi == doi & is.na(abs_df$WOS)), ]
+abs_df[duplicated(abs_df$WOS), ]  # 0, perfect
+# just keep relevant abstracts
+setdiff(wos$WOS, abs_df$WOS)  # 0, perfect
+setdiff(abs_df$WOS, wos$WOS)
+
+abs_df = abs_df[abs_df$WOS %in% wos$WOS, ]
+dim(abs_df)  # 379
+
+
 #**********************************************************
 # 3 SAVE OUTPUT--------------------------------------------
 #**********************************************************
 
-save(qual, wos, tc, file = file.path(dir_ima, "01_input.Rdata"))
+save(abs_df, qual, tc, wos, file = file.path(dir_ima, "01_input.Rdata"))
 # load(file.path(dir_ima, "01_input.Rdata"))
