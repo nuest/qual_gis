@@ -21,40 +21,17 @@ library("spData")
 library("sf")
 library("lattice")
 library("latticeExtra")
-library("RODBC")
-library("RPostgreSQL")
 
 # define directories
-dir_main = "D:/uni/science/projects/computing/qual_gis/review"
+dir_main = "."
 dir_data = file.path(dir_main, "data")
 dir_ima = file.path(dir_main, "images")
 dir_figs = file.path(dir_main, "figures")
 
 # attach data
-load(file.path(dir_ima, "01-mat.Rdata"))
-load(file.path(dir_ima, "01-classes.Rdata"))
-
-# connect to Access
-con = odbcConnectAccess2007(file.path(dir_data, "Database_WOS.accdb"))
-sqlTables(con)
-# retrieve table with all the abstracts
-qual = sqlFetch(con, "tblQUAL_GIS", as.is = TRUE)  # 
-wos = sqlFetch(con, "tblWOS", as.is = TRUE)  
-# idCitavi -> tblQualGIS
-# WOS connecting tblWOS and tblAbstract
-odbcClose(con)
-
-drv <- dbDriver("PostgreSQL")
-# note that "con" will be used later in each connection to the database
-con <- dbConnect(drv, dbname = "mreolgsw",        
-                 # change con to elephantsql database
-                 host = "horton.elephantsql.com", port = 5432,
-                 user = "mreolgsw", 
-                 password = "VOvgCnJaQuFBr5dZknPbyDDO1vcUpfnW")
-RPostgreSQL::dbListTables(conn = con)
-qual = dbGetQuery(con, "SELECT * FROM main_qual_gis")
-wos = dbGetQuery(con, "SELECT * FROM wos")  
-dbDisconnect(conn = con)
+load(file.path(dir_ima, "01_input.Rdata"))
+load(file.path(dir_ima, "07_mat.Rdata"))
+load(file.path(dir_ima, "07_classes.Rdata"))
 
 #**********************************************************
 # 4 MAPPING CLUSTERS---------------------------------------
@@ -64,9 +41,9 @@ dbDisconnect(conn = con)
 clus = data.frame(cluster = classes$cluster)
 clus$idCitavi = as.numeric(rownames(clus))
 # sum(rownames(clus) == rownames(mat)) == nrow(mat)  # TRUE, perfect
-# ERIC: WhHY ARE THESE IDS MISSING FROM QUAL?????????????
 setdiff(clus$idCitavi, qual$fidCitavi)
-# setdiff(qual$fidCitavi, clus$idCitavi)
+# 13 manuscripts without an abstract
+setdiff(qual$fidCitavi, clus$idCitavi)
 clus = dplyr::inner_join(clus, 
                   dplyr::select(qual, fidCitavi, lat = Latitude,
                                 lon = Longtitude),
@@ -74,13 +51,22 @@ clus = dplyr::inner_join(clus,
 head(clus)
 clus[clus$lon > 180 | clus$lon < -180, ]
 clus[clus$lon > 180 | clus$lon < -180, "lon"] = -12.31
-# 136 studies with 0, 0 coordinates, i.e. NAs... (ask ERIC!!!!)
-dim(clus[clus$lon == 0 & clus$lat == 0, ])
+
+# check lat/lon data
+dim(clus[clus$lon == 0 & clus$lat == 0, ])  # 100 studies without coordinates
 # remove them
 clus = clus[!(clus$lon == 0 & clus$lat == 0), ]
 
 plot(st_geometry(world), ylim = c(-30, 30), xlim = c(-140, 140))
 points(clus$lon, clus$lat, pch = 16, col = clus$cluster)
+# check if there were really studies in Hawaii and Tahiti
+
+ind = filter(clus, lon < -129 & lon > -160) %>% dplyr::pull(idCitavi)
+filter(qual, fidCitavi %in% ind)
+filter(wos, idCitavi %in% c(109, 448))
+# ok, first article is located in Hawaii, second in Polyesia, perfect
+
+
 x = clus[, c("lon", "lat", "cluster")]
 coordinates(clus) =~ lon + lat
 pal = RColorBrewer::brewer.pal("Set3", n =  6)[3:6]
