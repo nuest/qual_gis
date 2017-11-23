@@ -1,4 +1,4 @@
-# Filename: 01-abs_mining.R (2017-08-30)
+# Filename: 07_abs_mining.R (2017-08-30)
 #
 # TO DO: create word-paper matrix for ordinations
 #
@@ -16,7 +16,6 @@
 #**********************************************************
 
 # attach packages
-library("RODBC")
 library("data.table")
 library("dplyr")
 library("stringr")
@@ -28,55 +27,33 @@ library("labdsv")
 library("tidyverse")
 
 # define directories
-dir_main = "D:/uni/science/projects/computing/qual_gis/review"
+dir_main = "."
 dir_data = file.path(dir_main, "data")
 dir_ima = file.path(dir_main, "images")
 dir_figs = file.path(dir_main, "figures")
 
-drv <- dbDriver("PostgreSQL")
-# note that "con" will be used later in each connection to the database
-con <- dbConnect(drv, dbname = "mreolgsw",        
-                 # change con to elephantsql database
-                 host = "horton.elephantsql.com", port = 5432,
-                 user = "mreolgsw", 
-                 password = "VOvgCnJaQuFBr5dZknPbyDDO1vcUpfnW")
-RPostgreSQL::dbListTables(conn = con)
-# retrieve table with all the abstracts
-abs_df = dbGetQuery(con, "SELECT * FROM abstract")
-qual = dbGetQuery(con, "SELECT * FROM main_qual_gis")
-wos = dbGetQuery(con, "SELECT * FROM wos")  
-# idCitavi -> tblQualGIS
-# WOS connecting tblWOS and tblAbstract
-dbDisconnect(conn = con)
+# attach data
+load(file.path(dir_ima, "01_input.Rdata"))
 
 #**********************************************************
 # 2 EXPLORATION--------------------------------------------
 #**********************************************************
 
-# there is one NA in abs_df$WOS
-doi = abs_df[is.na(abs_df$WOS), "doi"]
-# however, the same pub has a WOS in the wos table (ask Eric!!)
-wos[wos$doi == doi & !is.na(wos$doi), ]
-# retrieve wos
-wos_id = wos[wos$doi == doi & !is.na(wos$doi), "WOS"]
-abs_df[abs_df$WOS %in% wos_id, ]
-abs_df[abs_df$doi %in% doi, ]  # ok, duplicated
-# remove the second
-# abs_df = abs_df[!(abs_df$doi == doi & is.na(abs_df$WOS)), ]
-# any other duplicates
-abs_df[duplicated(abs_df$doi) | duplicated(abs_df$WOS), "doi"]
-# no just NA in dois
-
-# now add citavi ID
-abs_df = inner_join(abs_df, dplyr::select(wos, WOS, idCitavi = idCItavi),
+# add citavi ID
+abs_df = inner_join(abs_df, dplyr::select(wos, WOS, idCitavi),
                     by = "WOS")
-abs_df[duplicated(abs_df$idCitavi), ]
+abs_df[duplicated(abs_df$idCitavi), ]  # 0, perfect
 
 # remove NAs
 abs = abs_df$abstract
 names(abs) = abs_df$idCitavi
 abs[which(sapply(abs, nchar) < 7)]
 abs[abs == "NA"] = NA
+sum(is.na(abs))  # 13 publications without abstract
+# have a look at them
+ids = as.numeric(names(abs[is.na(abs)]))
+abs_df[abs_df$idCitavi %in% ids, ]
+# delete them
 abs = abs[!is.na(abs)]
 
 # are there any abstracts without a word
@@ -153,13 +130,15 @@ rownames(mat) = ids
 mat = mat[as.character(sort(as.numeric(rownames(mat)))), ]
 mat = mat[, sort(names(mat))]
 # save your result
-# save(mat, file = file.path(dir_ima, "01-mat.Rdata"))
-# (load(file.path(dir_ima, "01-mat.Rdata")))
+# save(mat, file = file.path(dir_ima, "07_mat.Rdata"))
+
 
 #**********************************************************
 # 3 ORDINATIONS--------------------------------------------
 #**********************************************************
 
+# load the input data
+# (load(file.path(dir_ima, "07_mat.Rdata")))
 # presence-absence matrix
 # mat[mat > 0] = mat[mat > 0]^0
 
@@ -203,11 +182,12 @@ cumsum(ord$evals / sum(ord$evals))
 # # computing indicator values
 # ind = labdsv::indval(mat, classes, numitr = 1000)
 
-# set.seed(14)
+
 # kmeans clustering
 classes = kmeans(vegdist(mat, "bray"), 4)
 # classes = pam(vegdist(mat, "bray"), 4)
 # computing the indicator values
+set.seed(3334)
 ind = labdsv::indval(mat, classes$cluster, numitr = 1000)
 
 out = data.frame(
@@ -258,7 +238,7 @@ p_1 = ggplot(out_2) +
 ggsave(file.path(dir_figs, "dca.png"), p_1, dpi = 300, width = 15, height = 15, 
        units = "cm")
 # to be able to reproduce the exact same plot
-# save(out, out_2, ind, classes, file = file.path(dir_ima, "01-classes.Rdata"))
+# save(out, out_2, ind, classes, file = file.path(dir_ima, "07_classes.Rdata"))
 
 
 #**********************************************************
@@ -323,7 +303,7 @@ qual$Research_field %>%
   gsub("foresteri|forestri", "forest", .) %>%
   table %>%
   sort
-# public health and publie transportation
+# public health and public transportation
 grep("public", tolower(names(table(gsub(",.*", "", qual$Research_field)))), 
      value = TRUE)
 
@@ -350,7 +330,7 @@ R2wd::wdTable(format(tab),
 
 
 #**********************************************************
-# TESTIN ISOMAP, NMDS, PAM, KMEANS-------------------------
+# TESTING ISOMAP, NMDS, PAM, KMEANS------------------------
 #**********************************************************
 
 # ISOMAP
