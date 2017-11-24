@@ -10,4 +10,7 @@ on the applied data analysis methodology.
 
 ## Structure 
 
-*
+* [code](https://github.com/EricKrg/qual_gis/tree/master/code)
+* [data](https://github.com/EricKrg/qual_gis/tree/master/data)
+* [figures](https://github.com/EricKrg/qual_gis/tree/master/figures)
+* [wos_query](https://github.com/EricKrg/qual_gis/tree/master/wos_query)
