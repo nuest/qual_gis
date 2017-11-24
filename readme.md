@@ -9,6 +9,3 @@ reviewing the current literature on qualitative GIS and gives a in depth view
 on the applied data analysis methodology. 
 
 ##Structure 
-
-*
-
