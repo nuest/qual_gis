@@ -10,5 +10,9 @@ on the applied data analysis methodology.
 
 ##Structure 
 
+<<<<<<< HEAD
 *
+=======
+
+>>>>>>> 9c6548467426db584b6ea119cc80f6096794abb7
 
