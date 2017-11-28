@@ -54,7 +54,7 @@ dim(clus[clus$lon == 0 & clus$lat == 0, ])  # 100 studies without coordinates
 # remove them
 clus = clus[!(clus$lon == 0 & clus$lat == 0), ]
 
-plot(st_geometry(world), ylim = c(-30, 30), xlim = c(-140, 140))
+#plot(st_geometry(world), ylim = c(-30, 30), xlim = c(-140, 140))
 points(clus$lon, clus$lat, pch = 16, col = clus$cluster)
 # check if there were really studies in Hawaii and Tahiti
 
@@ -73,7 +73,7 @@ coordinates(clus) =~ lon + lat
 
 library(leaflet)
 
-#data
+##data-----
 clus_con <- left_join(st_as_sf(clus),wos)
 
 clus_con <- st_as_sf(clus_con)
@@ -83,9 +83,7 @@ clus_con$cluster_name[clus_con$cluster == 2] <- "Ecology and landscape research"
 clus_con$cluster_name[clus_con$cluster == 3] <- "Media and technology research"
 clus_con$cluster_name[clus_con$cluster == 4] <- "Participation and community"
 
-
-
-
+###popups
 clus_content <- paste(
   "<b>","Titel",": ","</b>", clus_con$title,
   "</br>",
@@ -94,9 +92,7 @@ clus_content <- paste(
   "<b>Year: </b>", clus_con$year, "</br>",
   "<b>Cluster: </b>", clus_con$cluster_name)
 
-
-
-#style
+##style & icons
 getColor <- function(clus_con) {
   sapply(clus$cluster, function(cluster) {
     if(cluster == 4) {
@@ -117,14 +113,18 @@ icons <- awesomeIcons(
   markerColor = getColor(clus_con)
 )
 
-
+##leaflet
 leaflet(clus_con) %>%
   addTiles() %>%
   addAwesomeMarkers(data = clus_con,
                    icon = icons,
                    popup = as.character(clus_content)) %>%
-  addProviderTiles(providers$CartoDB.DarkMatterNoLabels, group = "Dark")
-
-
+  addProviderTiles(providers$CartoDB.DarkMatterNoLabels, group = "Dark") %>%
+  addLegend("bottomright",
+            colors =c("blue", "green", "red", "orange"),
+                        labels= c("Infrastructure research"," Participation and community",
+                                  "Ecology and landscape research","Media and technology research"),
+                        title= "Clusters",
+                        opacity = 1)
 
 
