@@ -52,7 +52,7 @@ cits = readLines(paste0("https://raw.githubusercontent.com/EricKrg/qual_gis/",
 #**********************************************************
 
 # 2.1 qual table===========================================
-#==========================================================
+#**********************************************************
 # First, remove all irrelevant publications
 qual = filter(qual, Qual_Context == TRUE)
 
@@ -61,7 +61,7 @@ dups = qual[duplicated(qual$fidCitavi) |
               duplicated(qual$fidCitavi, fromLast = TRUE), ]
 # 4 duplicates -> no good -> ask Erik
 dups[order(dups$fidCitavi), ]
-qual[is.na(qual$fidCitavi), ]  # there is one NA -> ask Erik
+qual[is.na(qual$fidCitavi), ]  # there is one NA -> ask Eric
 qual[duplicated(qual$doi), ]  # 0, perfect
 qual[duplicated(qual$WOS), ]  # 0, perfect
 # so until there is a solution, remove inconsistencies
