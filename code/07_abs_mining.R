@@ -83,9 +83,13 @@ ids = names(abs)
 abs = str_replace_all(abs, "[:punct:]|[:digit:]|[:cntrl:]", "") %>%
   stripWhitespace()
 
-stop_words = c(stopwords("English"), 
-               c("due", "also", "however", "using", "within", "therefore", 
+# stop_words = c(stopwords("English"),
+#                c("due", "also", "however", "using", "within", "therefore",
+#                  "like"))
+stop_words = c(stopwords("SMART"),
+               c("due", "also", "however", "using", "within", "therefore",
                  "like"))
+
 test = lapply(abs, function(x) {
   x_2 = str_split(x, pattern = " ") %>%
     unlist %>%
@@ -152,20 +156,20 @@ mat = mat[, sort(names(mat))]
 ord = vegan::decorana(decostand(mat, "pa"), iweigh = 1)
 
 # last line corresponds to axis lengths
-ord              
+ord
 # retrieving axis lengths manually
 # length first axis (2.23)
-# sum(abs(range(scores(ord, "sites")[, 1])))                     
+# sum(abs(range(scores(ord, "sites")[, 1])))
 # length second axis (2.2)
-# sum(abs(range(scores(ord, "sites")[, 2])))                     
+# sum(abs(range(scores(ord, "sites")[, 2])))
 # proportion of variance
-ord$evals / sum(ord$evals)                                      
+ord$evals / sum(ord$evals)
 # cumulative proportion
-cumsum(ord$evals / sum(ord$evals))                             
+cumsum(ord$evals / sum(ord$evals))
 # proportion of variance as used in other software (PC-Ord), see ?decorana
-# ord$evals.decorana / sum(ord$evals.decorana)                    
+# ord$evals.decorana / sum(ord$evals.decorana)
 #cumulative proportion as used in other software (PC-Ord)
-# cumsum(ord$evals.decorana / sum(ord$evals.decorana))            
+# cumsum(ord$evals.decorana / sum(ord$evals.decorana))
 
 
 # ward's clustering also outputs meaningful results with Bray-Curtis distance
@@ -188,14 +192,14 @@ cumsum(ord$evals / sum(ord$evals))
 classes = kmeans(vegdist(mat, "bray"), 4)
 # classes = pam(vegdist(mat, "bray"), 4)
 # computing the indicator values
-set.seed(3334)
+set.seed(01052018)
 ind = labdsv::indval(mat, classes$cluster, numitr = 1000)
 
 out = data.frame(
   # the indicator values for each class for each word
   ind$indval,
   # significance value for a word
-  "pval" = ind$pval, 
+  "pval" = ind$pval,
   "words" = names(ind$pval),
   # assign the most likeliest class, i.e. the class with the
   # highest indicator value
@@ -223,20 +227,20 @@ out_2 = group_by(out, class) %>%
 # plot(x = out_2$DCA1, y = out_2$DCA2, type = "n")
 # text(x = out_2$DCA1, y = out_2$DCA2, labels = out_2$words, col = out_2$class)
 pal = RColorBrewer::brewer.pal("Set3", n =  6)[3:6]
-p_1 = ggplot(out_2) + 
-  ggrepel::geom_label_repel(aes(out_2$scores_1, 
-                                out_2$scores_2, 
-                                fill = factor(out_2$class), 
+p_1 = ggplot(out_2) +
+  ggrepel::geom_label_repel(aes(out_2$scores_1,
+                                out_2$scores_2,
+                                fill = factor(out_2$class),
                                 label = out_2$words,
                                 colour = pal),
                             segment.color = NA,
                             fontface = "bold", color = "black", size = 3,
                             box.padding = unit(0.15, "lines")) +
-  labs(x = "scores 1st axis", y = "scores 2nd axis") + 
-  guides(fill = ggplot2::guide_legend(title = NULL)) + 
-  theme_classic(base_size = 12) + 
+  labs(x = "scores 1st axis", y = "scores 2nd axis") +
+  guides(fill = ggplot2::guide_legend(title = NULL)) +
+  theme_classic(base_size = 12) +
   scale_fill_manual(values = pal)
-ggsave(file.path(dir_figs, "dca.png"), p_1, dpi = 300, width = 15, height = 15, 
+ggsave(file.path(dir_figs, "dca.png"), p_1, dpi = 300, width = 15, height = 15,
        units = "cm")
 # to be able to reproduce the exact same plot
 # save(out, out_2, ind, classes, file = file.path(dir_ima, "07_classes.Rdata"))
@@ -247,19 +251,19 @@ ggsave(file.path(dir_figs, "dca.png"), p_1, dpi = 300, width = 15, height = 15,
 #**********************************************************
 
 # "ecosystem services", "land use", "children GIS", "geographic information",
-# etc. yeah, would be interesting but maybe is too much for this paper... also 
-# interesting to discuss other clustering (kmean, pam, etc) and ordination 
+# etc. yeah, would be interesting but maybe is too much for this paper... also
+# interesting to discuss other clustering (kmean, pam, etc) and ordination
 # techniques (NMDS, Isomap)
 x <- tmp$Abstract[1]
 text_1 <- str_split(x, pattern = " ") %>%
   unlist %>%
   gsub("\\.|;|:|,", "", .)
-table(text_1) %>% 
+table(text_1) %>%
   sort
 text_2 <- paste(text_1, text_1[-1])
 # the last one is due to recycling, so remove it
 text_2 <- text_2[-length(text_2)]
-table(text_2) %>% 
+table(text_2) %>%
   sort
 
 
@@ -269,7 +273,7 @@ table(text_2) %>%
 
 test <- do.call(c, test)
 tab <- table(test) %>%
-  sort %>% 
+  sort %>%
   rev
 # just consider the most important words
 test <- test[test %in% names(tab[tab > 50])]
@@ -305,7 +309,7 @@ qual$Research_field %>%
   table %>%
   sort
 # public health and public transportation
-grep("public", tolower(names(table(gsub(",.*", "", qual$Research_field)))), 
+grep("public", tolower(names(table(gsub(",.*", "", qual$Research_field)))),
      value = TRUE)
 
 os_soft = filter(gis, `Open-source` == 1) %>%
@@ -326,7 +330,7 @@ tab = inner_join(qual, dplyr::select(gis, idGIS, Open_source),
 names(tab) = c("Country", "Frequency")
 library("R2wd")
 wdGet()
-R2wd::wdTable(format(tab), 
+R2wd::wdTable(format(tab),
               caption = "Countries using open-source GIS.")
 
 
@@ -335,14 +339,14 @@ R2wd::wdTable(format(tab),
 #**********************************************************
 
 # ISOMAP
-source(file.path("D:/uni/science/projects/ecology/asia/Mongolia/", 
+source(file.path("D:/uni/science/projects/ecology/asia/Mongolia/",
                  "TINN-R/functions/bestisomap.r"))
 #Isomap
 pa = decostand(mat, "pa")
 # tmp = as.data.frame(pa)
-bestiso = bestisomap(vegdist(pa, "bray"), k = 2) 
+bestiso = bestisomap(vegdist(pa, "bray"), k = 2)
 # explained variance first two axes = 22.91 % (k = 406)
-bestiso = bestisomap(vegdist(mat, "bray"), k = 2) 
+bestiso = bestisomap(vegdist(mat, "bray"), k = 2)
 # explained variance first two axes = 22.1 % (k = 342)
 
 # NMDS
@@ -370,7 +374,7 @@ k.best = which.max(asw)
 cat("silhouette-optimal number of clusters:", k.best, "\n")
 plot(1:5, asw, type = "h", main = "pam() clustering assessment",
      xlab = "k (# clusters)", ylab = "average silhouette width")
-axis(1, k.best, paste("best", k.best, sep = "\n"), col = "red", 
+axis(1, k.best, paste("best", k.best, sep = "\n"), col = "red",
      col.axis = "red")
 
 # KMEANS===================================================
@@ -379,7 +383,7 @@ kmeans.fun <- function (data, maxclusts = 15) {
   t <- kmeans(data, 1, nstart = 20)$totss
   w <- lapply(as.list(2:maxclusts), function(nc)
     kmeans(data,nc)$tot.withinss)
-  
+
   plot(1:maxclusts, c(t,w), type = "b",
        xlab = "Number of Clusters",
        ylab = "Within groups sum of squares",
@@ -395,9 +399,9 @@ classes = kmeans(vegdist(mat, "bray"), 4)
 ind = labdsv::indval(mat, classes$cluster, numitr = 1000)
 out = data.frame(
   # the indicator values for each class for each word
-  round(ind$indval, d = 2), 
+  round(ind$indval, d = 2),
   # significance value for a word
-  "pval" = ind$pval, 
+  "pval" = ind$pval,
   "words" = names(ind$pval),
   # assign the most likeliest class, i.e. the class with the
   # highest indicator value
