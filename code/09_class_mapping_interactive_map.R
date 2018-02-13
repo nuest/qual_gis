@@ -20,7 +20,7 @@ pacman::p_load(sp,spData,sf, lattice,latticeExtra, tidyverse)
 
 
 # define directories
-dir_main = "C:/Users/Eric/Documents/qual_gis/qual_gis"
+dir_main = "."
 dir_data = file.path(dir_main, "data")
 dir_ima = file.path(dir_main, "images")
 dir_figs = file.path(dir_main, "figures")
