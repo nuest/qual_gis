@@ -47,6 +47,7 @@ abs_df[duplicated(abs_df$idCitavi), ]  # 0, perfect
 
 # remove NAs
 abs = abs_df$abstract
+# give abs the Citavi ID
 names(abs) = abs_df$idCitavi
 abs[which(sapply(abs, nchar) < 7)]
 abs[abs == "NA"] = NA
@@ -89,7 +90,8 @@ abs = str_replace_all(abs, "[:punct:]|[:digit:]|[:cntrl:]", "") %>%
 stop_words = c(stopwords("SMART"),
                c("due", "also", "however", "using", "within", "therefore",
                  "like"))
-
+# abs have lost their names, give them back!!
+names(abs) = ids
 test = lapply(abs, function(x) {
   x_2 = str_split(x, pattern = " ") %>%
     unlist %>%
@@ -124,19 +126,22 @@ test_2 = lapply(test, function(x) {
     # delete the first column (value)
     dplyr::select(-1)
 })
+# check names
+# names(test_2)  # ok, still Citavi ID
 
 # pub-word matrix (plot-species matrix)
 mat = data.table::rbindlist(test_2, fill = TRUE)
 # replace NAs by 0
 mat[is.na(mat)] = 0
 mat = as.data.frame(mat)
-rownames(mat) = ids
-# order by row number and colnames
-mat = mat[as.character(sort(as.numeric(rownames(mat)))), ]
+rownames(mat) = ids  # is the same names(abs), names(test), names(test_2)
+# identical(ids, names(abs))  # is the same as names(abs)
+# identical(names(abs), names(test_2))
+# identical(names(abs), names(tes))
+# order by colnames
 mat = mat[, sort(names(mat))]
-# save your result
-# save(mat, file = file.path(dir_ima, "07_mat.Rdata"))
-
+# save your result and remember that rownames(mat) correspond to abs_df$idCitavi
+save(mat, file = file.path(dir_ima, "07_mat.Rdata"))
 
 #**********************************************************
 # 3 ORDINATION & CLUSTERING--------------------------------
@@ -153,7 +158,7 @@ mat = mat[, sort(names(mat))]
 # head(cumsum(eigenvals(ord) / sum(eigenvals(ord))))
 
 # downweighting of rare species
-ord = vegan::decorana(decostand(mat, "pa"), iweigh = 1)
+ord = decorana(decostand(mat, "pa"), iweigh = 1)
 
 # last line corresponds to axis lengths
 ord
@@ -192,7 +197,7 @@ cumsum(ord$evals / sum(ord$evals))
 classes = kmeans(vegdist(mat, "bray"), 4)
 # classes = pam(vegdist(mat, "bray"), 4)
 # computing the indicator values
-set.seed(01052018)
+set.seed(14022018)
 ind = labdsv::indval(mat, classes$cluster, numitr = 1000)
 
 out = data.frame(
@@ -243,7 +248,8 @@ p_1 = ggplot(out_2) +
 ggsave(file.path(dir_figs, "dca.png"), p_1, dpi = 300, width = 15, height = 15,
        units = "cm")
 # to be able to reproduce the exact same plot
-# save(out, out_2, ind, classes, file = file.path(dir_ima, "07_classes.Rdata"))
+# save(ord, classes, ind, out, out_2,
+#      file = file.path(dir_ima, "07_classes.Rdata"))
 
 
 #**********************************************************
