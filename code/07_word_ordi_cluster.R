@@ -1,6 +1,6 @@
 # Filename: 07_abs_mining.R (2017-08-30)
 #
-# TO DO: create word-paper matrix for ordinations
+# TO DO: create word-paper matrix for ordinations and clustering
 #
 # Author(s): Jannes Muenchow
 #
@@ -11,6 +11,7 @@
 # 1. ATTACH PACKAGES AND DATA
 # 2. EXPLORATION
 # 3. ORDINATION & CLUSTERING
+# 4. CLUSTER CENTROIDS
 #
 #**********************************************************
 # 1 ATTACH PACKAGES AND DATA-------------------------------
@@ -232,6 +233,10 @@ out_2 = group_by(out, class) %>%
 # plot(x = out_2$DCA1, y = out_2$DCA2, type = "n")
 # text(x = out_2$DCA1, y = out_2$DCA2, labels = out_2$words, col = out_2$class)
 pal = RColorBrewer::brewer.pal("Set3", n =  6)[3:6]
+# each time you run labdsv::indval cluster order changes, so in one run class 1
+# is urban/infrastructure and in the next run class 1 is ppgis, hence, you have
+# to create also anew 08_class_mapping (you would have to do it in any case, but
+# just to remember)!!!
 p_1 = ggplot(out_2) +
   ggrepel::geom_label_repel(aes(out_2$scores_1,
                                 out_2$scores_2,
@@ -251,6 +256,75 @@ ggsave(file.path(dir_figs, "dca.png"), p_1, dpi = 300, width = 15, height = 15,
 # save(ord, classes, ind, out, out_2,
 #      file = file.path(dir_ima, "07_classes.Rdata"))
 
+#**********************************************************
+# 4 CLUSTER CENTROIDS--------------------------------------
+#**********************************************************
+
+# load(file.path(dir_ima, "01_input.Rdata"))
+# load(file.path(dir_ima, "07_classes.Rdata"))
+# # if "01_input.Rdata" was loaded anew, you have to idCitavi again
+# abs_df = inner_join(abs_df, dplyr::select(wos, WOS, idCitavi),
+#                     by = "WOS")
+
+# add times cited
+abs_df = inner_join(abs_df, dplyr::select(tc, tc, WOS), by = "WOS")
+
+# find cluster centroids (centers) in ordination space
+x = data.frame(scores(ord, display = "sites")[, 1:2], class = classes$cluster)
+plot(x[, 1:2], col = classes$cluster, pch = 16)
+cen = group_by(x, class) %>%
+  summarize_all(funs(mean))
+points(cen[, c("DCA1", "DCA2")], cex = 3, pch = 16,  col = "yellow")
+# find the points closest to each center
+dists = sp::spDists(as.matrix(dplyr::select(x, -class)),
+                    as.matrix(dplyr::select(cen, -class)))
+dists = as.data.frame(dists)
+
+# using a spatial approach (centroids of convex hulls)
+# x = st_as_sf(x, coords = c("DCA1", "DCA2"))
+# x_1 = filter(x, class == 1)
+# x_1 = st_union(x_1) %>% st_convex_hull
+# plot(st_centroid(x_1), add = TRUE, col = "blue", pch = 16)
+# plot(st_geometry(x))
+# plot(st_centroid(x_1), add = TRUE, col = "blue", pch = 16)
+# points(within(cen, rm(class)), col = "red", cex = 1, pch = 16)
+
+# use the original rownames (inherited from abs_df, i.e. idCitavi)
+rownames(dists) = rownames(x)
+# find the 5 closest points to each centroid
+out = lapply(seq_len(ncol(dists)), function(i) {
+  # make sure to only select points belonging to the corresponding cluster
+  tmp = dists[x$class == i, ]
+  # now select the ten closest points
+  rownames(tmp[order(tmp[, i]), ])[1:15]
+})
+# check
+x[out[[1]], ]  # ok
+x[out[[2]], ]  # ok
+i = 2
+filter(x, class == i) %>% dplyr::select(-class) %>% plot
+points(cen[i, c("DCA1", "DCA2")], cex = 3, pch = 16,  col = "yellow")
+points(dplyr::select(x[out[[i]], ], -class), pch = 16, col = "lightblue")
+
+res = data.frame(x[unlist(out), "class"], as.numeric(unlist(out)),
+                 stringsAsFactors = FALSE)
+names(res) = c("class", "idCitavi")
+res = inner_join(dplyr::select(abs_df, -abstract), res, by = "idCitavi")
+
+res = group_by(res, class) %>%
+  top_n(5, tc) %>%
+  arrange(class, desc(tc))
+# to find the right cluster names, use the ordination plot
+p_1
+
+res$class = as.factor(res$class)
+levels(res$class) =
+  c("Ecology and landscape", "Participation and community",
+    "Urban and infrastructure", "Media and technology")
+
+# save your output
+# write.csv2(res, file = "C:/Users/pi37pat/Desktop/centroids.csv",
+#            row.names = FALSE)
 
 #**********************************************************
 # WORD-COMBINATION ORDINATION------------------------------
@@ -415,10 +489,4 @@ out = data.frame(
   # DCA scores
   vegan::scores(ord, display = c("species")))
 
-#**********************************************************
-# TIDY WORDS-----------------------------------------------
-#**********************************************************
 
-library("tidyr")
-# compute tf idf and dismiss all unimportant words (tf_idf < 0.003)
-bind_tf_idf(word, country, n)
