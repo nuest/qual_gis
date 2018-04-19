@@ -1,6 +1,6 @@
 # Filename: 00_data_prep.R (2017-11-22)
 #
-# TO DO: Data preparations which should result in cleaned datasets which will 
+# TO DO: Data preparations which should result in cleaned datasets which will
 #        form the basis for all subsequent analyses
 #
 # Author(s): Jannes Muenchow
@@ -33,11 +33,11 @@ drv = dbDriver("PostgreSQL")
 
 # creates a connection to the postgres database
 # note that "con" will be used later in each connection to the database
-con = dbConnect(drv, dbname = "mreolgsw",    
+con = dbConnect(drv, dbname = "mzsrnrwj",
                 # change con to elephantsql database
                 host = "horton.elephantsql.com", port = 5432,
-                user = "mreolgsw", 
-                password = "VOvgCnJaQuFBr5dZknPbyDDO1vcUpfnW")
+                user = "mzsrnrwj",
+                password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
 abs_df = dbGetQuery(con, "SELECT * FROM abstract")
 qual = dbGetQuery(con, "select * from main_qual_gis")
 wos = dbGetQuery(con, "select * from wos")
@@ -57,15 +57,15 @@ cits = readLines(paste0("https://raw.githubusercontent.com/EricKrg/qual_gis/",
 qual = filter(qual, Qual_Context == TRUE)
 
 # duplicates and NAs in qual
-dups = qual[duplicated(qual$fidCitavi) | 
-              duplicated(qual$fidCitavi, fromLast = TRUE), ]
+dups = qual[duplicated(qual$fid_citavi) |
+              duplicated(qual$fid_citavi, fromLast = TRUE), ]
 # 4 duplicates -> no good -> ask Erik
-dups[order(dups$fidCitavi), ]
-qual[is.na(qual$fidCitavi), ]  # there is one NA -> ask Eric
+dups[order(dups$fid_citavi), ]
+qual[is.na(qual$fid_citavi), ]  # there is one NA -> ask Eric
 qual[duplicated(qual$doi), ]  # 0, perfect
 qual[duplicated(qual$WOS), ]  # 0, perfect
 # so until there is a solution, remove inconsistencies
-qual = qual[!is.na(qual$fidCitavi) & !duplicated(qual$fidCitavi), ]
+qual = qual[!is.na(qual$fid_citavi) & !duplicated(qual$fid_citavi), ]
 
 # 2.2 wos table============================================
 #**********************************************************
@@ -77,16 +77,16 @@ wos[duplicated(wos$doi), ]$doi  # just NAs, so ok in the case of doi
 wos[duplicated(wos$WOS), ]  # 0, perfect
 # just keep relevant wos records
 # are all Citavi Ids available in both tables
-setdiff(qual$fidCitavi, wos$idCitavi)  # NA in qual$fidCitavi
-# setdiff(wos$idCitavi, qual$fidCitavi)  
-wos = filter(wos, idCitavi %in% qual$fidCitavi)
+setdiff(qual$fid_citavi, wos$idCitavi)  # 478
+# setdiff(wos$idCitavi, qual$fidCitavi)
+wos = filter(wos, idCitavi %in% qual$fid_citavi)
 
 # 2.3 times cited table====================================
 #**********************************************************
 tc = data.frame(WOS = unlist(stringr::str_extract_all(cits, "WOS:.*")))
 # extract lines with times cited
-tcits = grep("^TC", cits, value = TRUE) 
-year = grep("^PY", cits, value = TRUE) 
+tcits = grep("^TC", cits, value = TRUE)
+year = grep("^PY", cits, value = TRUE)
 tc$tc = as.numeric(unlist(stringr::str_extract_all(tcits, "\\d.*")))
 tc$year = as.numeric(unlist(stringr::str_extract_all(year, "\\d.*")))
 dim(tc)  # 490, pubs only had 475 --------> why?, ask Erik
@@ -104,7 +104,7 @@ abs_df[abs_df == "NA"] = NA
 # there is one NA in abs_df$WOS
 doi = abs_df[is.na(abs_df$WOS), "doi"]
 # any other duplicates
-abs_df[!is.na(abs_df$doi) & 
+abs_df[!is.na(abs_df$doi) &
          (duplicated(abs_df$doi) | duplicated(abs_df$doi, fromLast = TRUE)), ]
 # remove the second
 abs_df = abs_df[!(abs_df$doi == doi & is.na(abs_df$WOS)), ]
@@ -115,7 +115,6 @@ setdiff(abs_df$WOS, wos$WOS)
 
 abs_df = abs_df[abs_df$WOS %in% wos$WOS, ]
 dim(abs_df)  # 379
-
 
 #**********************************************************
 # 3 SAVE OUTPUT--------------------------------------------
