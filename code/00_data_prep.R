@@ -1,4 +1,4 @@
-# Filename: 00_data_prep.R (2017-11-22)
+# Filename: 00_data_prep.R (2018-04-20)
 #
 # TO DO: Data preparations which should result in cleaned datasets which will
 #        form the basis for all subsequent analyses
@@ -45,7 +45,7 @@ dbDisconnect(conn = con)
 
 # read in times cited
 cits = readLines(paste0("https://raw.githubusercontent.com/EricKrg/qual_gis/",
-                        "master/data/wos_lit.txt"))
+                        "master/data/qual_gis/wos_lit.txt"))
 
 #**********************************************************
 # 2 DATA EXPLORATION AND PREPARATION-----------------------
@@ -59,13 +59,13 @@ qual = filter(qual, Qual_Context == TRUE)
 # duplicates and NAs in qual
 dups = qual[duplicated(qual$fid_citavi) |
               duplicated(qual$fid_citavi, fromLast = TRUE), ]
-# 4 duplicates -> no good -> ask Erik
+# 0 duplicates, excellent
 dups[order(dups$fid_citavi), ]
-qual[is.na(qual$fid_citavi), ]  # there is one NA -> ask Eric
+qual[is.na(qual$fid_citavi), ]  # 0, perfect
 qual[duplicated(qual$doi), ]  # 0, perfect
 qual[duplicated(qual$WOS), ]  # 0, perfect
 # so until there is a solution, remove inconsistencies
-qual = qual[!is.na(qual$fid_citavi) & !duplicated(qual$fid_citavi), ]
+# qual = qual[!is.na(qual$fid_citavi) & !duplicated(qual$fid_citavi), ]
 
 # 2.2 wos table============================================
 #**********************************************************
@@ -76,8 +76,9 @@ wos[duplicated(wos$doi), ]$doi  # just NAs, so ok in the case of doi
 wos[duplicated(wos$WOS), ]  # 0, perfect
 # just keep relevant wos records
 # are all Citavi Ids available in both tables
-setdiff(qual$fid_citavi, wos$id_citavi)  # 478
+setdiff(qual$fid_citavi, wos$id_citavi)  # 0
 # setdiff(wos$idCitavi, qual$fidCitavi)
+# just keep relevatn qual GIS records
 wos = filter(wos, id_citavi %in% qual$fid_citavi)
 
 # 2.3 times cited table====================================
@@ -88,12 +89,13 @@ tcits = grep("^TC", cits, value = TRUE)
 year = grep("^PY", cits, value = TRUE)
 tc$tc = as.numeric(unlist(stringr::str_extract_all(tcits, "\\d.*")))
 tc$year = as.numeric(unlist(stringr::str_extract_all(year, "\\d.*")))
-dim(tc)  # 490, pubs only had 475 --------> why?, ask Erik
+dim(tc)  # 490, pubs only had 475
 sum(duplicated(tc$WOS))
 # ok, only keep WOS which can only be found in pubs
 setdiff(tc$WOS, wos$WOS)
 setdiff(wos$WOS, tc$WOS)  # ok, all WOS of tc can be found in wos, perfect
-tc = tc[tc$WOS %in% wos$WOS, ]
+# just keep relevant qual_gis records
+tc = tc[tc$WOS %in% wos$WOS, ]  # 380
 
 # 2.4 abstract table=======================================
 #**********************************************************
@@ -113,11 +115,54 @@ setdiff(wos$WOS, abs_df$WOS)  # 0, perfect
 setdiff(abs_df$WOS, wos$WOS)
 
 abs_df = abs_df[abs_df$WOS %in% wos$WOS, ]
-dim(abs_df)  # 379
+dim(abs_df)  # 380
 
 #**********************************************************
-# 3 SAVE OUTPUT--------------------------------------------
+# 3 TOTAL GIS RECORDS--------------------------------------
+#**********************************************************
+# search terms were:
+# GIS OR "geographic* information system"
+# year range: 1990-2017
+dir_data = "data/gis_total"
+files = grep("savedrecs", dir(dir_data), value = TRUE)
+# read the first file
+d = data.table::fread(file.path(dir_data, files[1]))
+# unfortunately, end of lines end with \t\t, which indicates a second column for
+# which there is no column name
+# get column names
+tmp = names(warnings()[1])
+cn = gsub(".*data: ", "", tmp) %>%
+  strsplit(split = "\t") %>%
+  unlist
+files = files[-1]
+# load all other files and rbind them
+for (i in files) {
+  tmp = data.table::fread(file.path(dir_data, i))
+  d = rbind(d, tmp)
+}
+# delete last column
+d = as.data.frame(d)
+d = d[, -ncol(d)]
+# add column names
+names(d) = cn
+# just keep year and times cited
+d = select(d, PY, TC)
+d = mutate(d, n = 1)
+# aggregate
+d = group_by(d, PY) %>%
+  summarize_all(funs(sum)) %>%
+  arrange(PY)
+# remove records from the year 2017
+gis_all = filter(d, PY != 2017)
+# plot(TC / sum(TC) ~ PY, gis_all, type = "l")
+# plot(n / sum(n) ~ PY, gis_all, type = "l")
+
+#**********************************************************
+# 4 SAVE OUTPUT--------------------------------------------
 #**********************************************************
 
-save(abs_df, qual, tc, wos, file = file.path(dir_ima, "01_input.Rdata"))
-# load(file.path(dir_ima, "01_input.Rdata"))
+saveRDS(abs_df, file.path(dir_ima, "00_abs_df.rds"))
+saveRDS(qual, file.path(dir_ima, "00_qual.rds"))
+saveRDS(tc, file.path(dir_ima, "00_tc.rds"))
+saveRDS(wos, file.path(dir_ima, "00_wos.rds"))
+saveRDS(gis_all, file.path(dir_ima, "00_gis_all.rds"))
