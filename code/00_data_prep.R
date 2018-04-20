@@ -70,16 +70,15 @@ qual = qual[!is.na(qual$fid_citavi) & !duplicated(qual$fid_citavi), ]
 # 2.2 wos table============================================
 #**********************************************************
 # duplicates and NAs in wos
-wos = rename(wos, idCitavi = idCItavi)
-wos[duplicated(wos$idCitavi), ]  # 0, perfect
-wos[is.na(wos$idCitavi), ]  # 0 NAs
+wos[duplicated(wos$id_citavi), ]  # 0, perfect
+wos[is.na(wos$id_citavi), ]  # 0 NAs
 wos[duplicated(wos$doi), ]$doi  # just NAs, so ok in the case of doi
 wos[duplicated(wos$WOS), ]  # 0, perfect
 # just keep relevant wos records
 # are all Citavi Ids available in both tables
-setdiff(qual$fid_citavi, wos$idCitavi)  # 478
+setdiff(qual$fid_citavi, wos$id_citavi)  # 478
 # setdiff(wos$idCitavi, qual$fidCitavi)
-wos = filter(wos, idCitavi %in% qual$fid_citavi)
+wos = filter(wos, id_citavi %in% qual$fid_citavi)
 
 # 2.3 times cited table====================================
 #**********************************************************
