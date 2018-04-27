@@ -23,16 +23,11 @@ library("gridExtra")
 library("data.table")
 library("tidyverse")
 
-# define directories
-dir_fig = "figures"
-dir_data = "data"
-dir_ima = "images"
-
 # attach data
-tc = readRDS(file.path(dir_ima, "00_tc.rds"))
-wos = readRDS(file.path(dir_ima, "00_wos.rds"))
-qual = readRDS(file.path(dir_ima, "00_qual.rds"))
-gis_all = readRDS(file.path(dir_ima, "00_gis_all.rds"))
+tc = readRDS("images/00_tc.rds")
+wos = readRDS("images/00_wos.rds")
+qual = readRDS("images/00_qual.rds")
+gis_all = readRDS("images/00_gis_all.rds")
 
 
 #**********************************************************
