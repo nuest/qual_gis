@@ -118,7 +118,7 @@ xyplot(coordinates(clus)[, 2] ~ coordinates(clus)[, 1], asp = "iso", col = pal,
                   space = "right",
                   text = list(paste("cluster", 1:4))))
 
-map = spplot(clus, "cluster", col.regions = pal, cex = 1.2,
+map = spplot(clus, "cluster", col.regions = pal, cex = 0.8,
              key.space = "right",
              key = list(
                points = list(fill = pal, pch = 21, border = "black",
