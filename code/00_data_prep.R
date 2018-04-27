@@ -21,12 +21,6 @@
 library("dplyr")
 library("RPostgreSQL")
 
-# define directories
-dir_main = "."
-dir_fig = file.path(dir_main, "figures")
-dir_data = file.path(dir_main, "data")
-dir_ima = file.path(dir_main, "images")
-
 # attach data
 # loads the PostgreSQL driver
 drv = dbDriver("PostgreSQL")
@@ -161,8 +155,8 @@ gis_all = filter(d, PY != 2017)
 # 4 SAVE OUTPUT--------------------------------------------
 #**********************************************************
 
-saveRDS(abs_df, file.path(dir_ima, "00_abs_df.rds"))
-saveRDS(qual, file.path(dir_ima, "00_qual.rds"))
-saveRDS(tc, file.path(dir_ima, "00_tc.rds"))
-saveRDS(wos, file.path(dir_ima, "00_wos.rds"))
-saveRDS(gis_all, file.path(dir_ima, "00_gis_all.rds"))
+saveRDS(abs_df, "images/00_abs_df.rds")
+saveRDS(qual, "images/00_qual.rds")
+saveRDS(tc, "images/00_tc.rds")
+saveRDS(wos, "images/00_wos.rds")
+saveRDS(gis_all, "images/00_gis_all.rds")
