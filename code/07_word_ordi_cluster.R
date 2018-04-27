@@ -28,28 +28,24 @@ library("vegan")
 library("labdsv")
 library("tidyverse")
 
-# define directories
-dir_main = "."
-dir_data = file.path(dir_main, "data")
-dir_ima = file.path(dir_main, "images")
-dir_figs = file.path(dir_main, "figures")
-
 # attach data
-load(file.path(dir_ima, "01_input.Rdata"))
+abs_df = readRDS("images/00_abs_df.rds")
+wos = readRDS("images/00_wos.rds")
+tc = readRDS("images/00_tc.rds")
 
 #**********************************************************
 # 2 EXPLORATION--------------------------------------------
 #**********************************************************
 
 # add citavi ID
-abs_df = inner_join(abs_df, dplyr::select(wos, WOS, idCitavi),
+abs_df = inner_join(abs_df, dplyr::select(wos, WOS, id_citavi),
                     by = "WOS")
-abs_df[duplicated(abs_df$idCitavi), ]  # 0, perfect
+abs_df[duplicated(abs_df$id_citavi), ]  # 0, perfect
 
 # remove NAs
 abs = abs_df$abstract
 # give abs the Citavi ID
-names(abs) = abs_df$idCitavi
+names(abs) = abs_df$id_citavi
 abs[which(sapply(abs, nchar) < 7)]
 abs[abs == "NA"] = NA
 sum(is.na(abs))  # 13 publications without abstract
@@ -73,9 +69,9 @@ abs[grep(" DOI:", abs)]
 # delete
 abs = gsub(" DOI:.*", "", abs)
 
-grep("•", abs, value = TRUE)
-# replace
-abs = gsub("•", " ", abs)
+# grep("•", abs, value = TRUE)
+# # replace
+# abs = gsub("•", " ", abs)
 
 # find land use
 grep("land use", abs)
@@ -142,14 +138,14 @@ rownames(mat) = ids  # is the same names(abs), names(test), names(test_2)
 # order by colnames
 mat = mat[, sort(names(mat))]
 # save your result and remember that rownames(mat) correspond to abs_df$idCitavi
-save(mat, file = file.path(dir_ima, "07_mat.Rdata"))
+# saveRDS(mat, file = "images/07_mat.rds")
 
 #**********************************************************
 # 3 ORDINATION & CLUSTERING--------------------------------
 #**********************************************************
 
 # load the input data
-# (load(file.path(dir_ima, "07_mat.Rdata")))
+mat = readRDS("images/07_mat.rds")
 # presence-absence matrix
 # mat[mat > 0] = mat[mat > 0]^0
 
@@ -159,8 +155,11 @@ save(mat, file = file.path(dir_ima, "07_mat.Rdata"))
 # head(cumsum(eigenvals(ord) / sum(eigenvals(ord))))
 
 # downweighting of rare species
-ord = decorana(decostand(mat, "pa"), iweigh = 1)
+# ord = decorana(decostand(mat, "pa"), iweigh = 1)
+ord = decorana(mat, iweigh = 1)
 
+# yields a better result but does not give a score for each word
+# ord = decorana(vegdist(decostand(mat, "pa"), "bray"), iweigh = 1)
 # last line corresponds to axis lengths
 ord
 # retrieving axis lengths manually
@@ -193,14 +192,27 @@ cumsum(ord$evals / sum(ord$evals))
 # # computing indicator values
 # ind = labdsv::indval(mat, classes, numitr = 1000)
 
-
-# kmeans clustering
+# kmeans clustering (output cluster classes are arbitrarily assigned since
+# kmeans starts with k randomly chosen centroids; hence when rerunning the
+# clustering class 1 might become class 3)
+# To make results reproducible, set a seed
+set.seed(27042018)
 classes = kmeans(vegdist(mat, "bray"), 4)
+table(classes$cluster)
 # classes = pam(vegdist(mat, "bray"), 4)
 # computing the indicator values
-set.seed(14022018)
+# a seed is also needed here, since results may vary slightly from run to run
+set.seed(270420182)
 ind = labdsv::indval(mat, classes$cluster, numitr = 1000)
+# save ordination/classification output
+# saveRDS(ord, "images/07_ord.rds")
+# saveRDS(classes, "images/07_classes.rds")
+# saveRDS(ind, "images/07_ind.rds")
 
+# load classification output
+ind = readRDS("images/07_ind.rds")
+ord = readRDS("images/07_ord.rds")
+classes = readRDS("images/07_classes.rds")
 out = data.frame(
   # the indicator values for each class for each word
   ind$indval,
@@ -249,21 +261,22 @@ p_1 = ggplot(out_2) +
   labs(x = "scores 1st axis", y = "scores 2nd axis") +
   guides(fill = ggplot2::guide_legend(title = NULL)) +
   theme_classic(base_size = 12) +
-  scale_fill_manual(values = pal)
-ggsave(file.path(dir_figs, "dca.png"), p_1, dpi = 300, width = 15, height = 15,
+  scale_fill_manual(values = pal,
+                    labels = c("EL cluster", "MT cluster",
+                               "PC cluster", "UI cluster"))
+ggsave("figures/dca.png", p_1, dpi = 300, width = 18, height = 15,
        units = "cm")
-# to be able to reproduce the exact same plot
-# save(ord, classes, ind, out, out_2,
-#      file = file.path(dir_ima, "07_classes.Rdata"))
+saveRDS(p_1, "images/07_p_1.rds")
 
 #**********************************************************
 # 4 CLUSTER CENTROIDS--------------------------------------
 #**********************************************************
-
-# load(file.path(dir_ima, "01_input.Rdata"))
-# load(file.path(dir_ima, "07_classes.Rdata"))
-# # if "01_input.Rdata" was loaded anew, you have to idCitavi again
-# abs_df = inner_join(abs_df, dplyr::select(wos, WOS, idCitavi),
+#
+# abs_df = readRDS("images/00_abs_df.rds")
+tc = readRDS("images/00_tc.rds")
+wos = readRDS("images/00_wos.rds")
+# # if abs_df and wos were loaded anew, you have to add  id_citavi again
+# abs_df = inner_join(abs_df, dplyr::select(wos, WOS, id_citavi),
 #                     by = "WOS")
 
 # add times cited
@@ -308,8 +321,8 @@ points(dplyr::select(x[out[[i]], ], -class), pch = 16, col = "lightblue")
 
 res = data.frame(x[unlist(out), "class"], as.numeric(unlist(out)),
                  stringsAsFactors = FALSE)
-names(res) = c("class", "idCitavi")
-res = inner_join(dplyr::select(abs_df, -abstract), res, by = "idCitavi")
+names(res) = c("class", "id_citavi")
+res = inner_join(dplyr::select(abs_df, -abstract), res, by = "id_citavi")
 
 res = group_by(res, class) %>%
   top_n(5, tc) %>%
@@ -319,8 +332,8 @@ p_1
 
 res$class = as.factor(res$class)
 levels(res$class) =
-  c("Ecology and landscape", "Participation and community",
-    "Urban and infrastructure", "Media and technology")
+  c("Ecology and landscape", "Media and technology",
+    "Participation and community", "Urban and infrastructure")
 
 # save your output
 # write.csv2(res, file = "C:/Users/pi37pat/Desktop/centroids.csv",
@@ -470,7 +483,7 @@ kmeans.fun <- function (data, maxclusts = 15) {
        main = paste(deparse(substitute(data))))
 }
 
-# kmeans.fun(pa)
+kmeans.fun(decostand(mat, "pa"), "bray")
 kmeans.fun(vegdist(pa, "bray"))  # ok, looks like 4-6 clusters
 kmeans.fun(mat)  # > 10
 kmeans.fun(pa)  # > 10
