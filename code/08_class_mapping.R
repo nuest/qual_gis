@@ -123,7 +123,8 @@ map = spplot(clus, "cluster", col.regions = pal, cex = 0.8,
              key = list(
                points = list(fill = pal, pch = 21, border = "black",
                              cex = 1.5),
-               text = list(paste(c("EL", "MT", "PC", "UI"), "cluster"), cex = 0.8)
+               text = list(paste(c("EL", "MT", "PC", "UI"), "cluster"),
+                           cex = 0.8)
              ),
              sp.layout = list(
                # list("sp.points", clus, col = "black", pch = 21, cex = 1.2),
