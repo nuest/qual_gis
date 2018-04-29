@@ -19,15 +19,15 @@ drv <- dbDriver("PostgreSQL")
 
 # creates a connection to the postgres database
 # note that "con" will be used later in each connection to the database
-con <- dbConnect(drv, dbname = "mreolgsw",        #change con to elephantsql database
+con <- dbConnect(drv, dbname = "mzsrnrwj",        #change con to elephantsql database
                  host = "horton.elephantsql.com", port = 5432,
-                 user = "mreolgsw", password = "VOvgCnJaQuFBr5dZknPbyDDO1vcUpfnW")
+                 user = "mzsrnrwj", password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
 
 
 
 relevant <- dbGetQuery(con, "select * from wos")
 relevant2 <- dbGetQuery(con, "select * from main_qual_gis")
-colnames(relevant)[1] <- "fidCitavi"
+colnames(relevant)[1] <- "fid_citavi"
 relevant <- left_join(relevant, relevant2)
 relevant <- relevant %>%
   filter(Qual_Context == TRUE) %>%
@@ -46,7 +46,7 @@ soft <- data.frame(w = relevant$WOS,
                  GIS = relevant$fidGIS)
 
 qdata <- data.frame(w = relevant$WOS,
-                    qdata = str_split_fixed(relevant$fidqualdata, ";", 7))
+                    qdata = str_split_fixed(relevant$fidQualData, ";", 7))
 
 trans_soft <- left_join(soft, transfer)
 ###************************
