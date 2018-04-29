@@ -26,9 +26,10 @@ dir_ima = file.path(dir_main, "images")
 dir_figs = file.path(dir_main, "figures")
 
 # attach data
-load(file.path(dir_ima, "01_input.Rdata"))
-load(file.path(dir_ima, "07_mat.Rdata"))
 load(file.path(dir_ima, "07_classes.Rdata"))
+wos <- readRDS("images/00_wos.rds")
+mat <- readRDS("images/07_mat.rds")
+qual <- readRDS("images/00_qual.rds")
 
 #**********************************************************
 # 4 MAPPING CLUSTERS---------------------------------------
@@ -42,9 +43,9 @@ setdiff(clus$idCitavi, qual$fidCitavi)
 # 13 manuscripts without an abstract
 setdiff(qual$fidCitavi, clus$idCitavi)
 clus = dplyr::inner_join(clus,
-                         dplyr::select(qual, fidCitavi, lat = Latitude,
+                         dplyr::select(qual, fid_citavi, lat = Latitude,
                                        lon = Longtitude),
-                         by = c("idCitavi" = "fidCitavi"))
+                         by = c("idCitavi" = "fid_citavi"))
 head(clus)
 clus[clus$lon > 180 | clus$lon < -180, ]
 clus[clus$lon > 180 | clus$lon < -180, "lon"] = -12.31
@@ -62,7 +63,7 @@ ind = filter(clus, lon < -129 & lon > -160) %>% dplyr::pull(idCitavi)
 filter(qual, qual$fidCitavi %in% ind)
 filter(wos, wos$idCitavi %in% c(109, 448))
 # ok, first article is located in Hawaii, second in Polyesia, perfect
-
+colnames(clus)[2] <- "id_citavi"
 x = clus[, c("lon", "lat", "cluster")]
 coordinates(clus) =~ lon + lat
 
@@ -96,13 +97,13 @@ clus_content <- paste(
 getColor <- function(clus_con) {
   sapply(clus$cluster, function(cluster) {
     if(cluster == 4) {
-      "green"
+      "red"
     } else if(cluster == 3) {
       "orange"
     } else if(cluster == 2) {
-      "red"
-    } else {
       "blue"
+    } else {
+      "purple"
     } })
 }
 pacman::p_load(ion)
@@ -119,9 +120,9 @@ leaflet(clus_con) %>%
   addAwesomeMarkers(data = clus_con,
                    icon = icons,
                    popup = as.character(clus_content)) %>%
-  addProviderTiles(providers$CartoDB.DarkMatterNoLabels, group = "Dark") %>%
+  addProviderTiles(providers$CartoDB.PositronNoLabels, group = "Dark") %>%
   addLegend("bottomright",
-            colors =c("blue", "green", "red", "orange"),
+            colors =c("purple", "red", "blue", "orange"),
                         labels= c("Infrastructure research"," Participation and community",
                                   "Ecology and landscape research","Media and technology research"),
                         title= "Clusters",
