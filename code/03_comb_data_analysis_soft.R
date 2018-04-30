@@ -1,179 +1,123 @@
-
-#### GIS-Transfer- GIS - Software - Qual.-Data
-#### script for a three sited net.plot
-
-# Internet connection required for connection to the remote DB
-
-
-#******
-#packages---------
-#******
-pacman::p_load(ggplot2, ggthemes, tidyverse,
-               stringr, plotly, ggraph, igraph,
-               RPostgreSQL)
-#******
-#Database------
-#******
-# loads the PostgreSQL driver
-# drv <- dbDriver("PostgreSQL")
+# Filename: 03_comb_data_analysis_soft.R (2018-04-30)
 #
-# # creates a connection to the postgres database
-# # note that "con" will be used later in each connection to the database
-# con <- dbConnect(drv, dbname = "mzsrnrwj",        #change con to elephantsql database
-#                  host = "horton.elephantsql.com", port = 5432,
-#                  user = "mzsrnrwj", password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
+# TO DO:  GIS-Transfer- GIS - Software - Qual.-Data
+#         script for a three sited net.plot
+#
+#
+# Author(s): Eric Krueger, Jannes Muenchow
+#
+#**********************************************************
+# CONTENTS-------------------------------------------------
+#**********************************************************
+#
+# 1. ATTACH PACKAGES AND DATA
+# 2.
+#
+#**********************************************************
+# 1 ATTACH PACKAGES AND DATA-------------------------------
+#**********************************************************
 
-abs_df <- readRDS("./images/00_abs_df.rds")
-qual <- readRDS("./images/00_qual.rds")
-tc <- readRDS("./images/00_tc.rds")
-wos <- readRDS("./images/00_wos.rds")
-gis_all <- readRDS("./images/00_gis_all.rds")
+# attach packages
+pacman::p_load(ggplot2, ggthemes, tidyverse,
+               stringr, plotly, ggraph, igraph, magrittr)
+# attach data
+abs_df = readRDS("images/00_abs_df.rds")
+qual = readRDS("images/00_qual.rds")
+tc = readRDS("images/00_tc.rds")
+wos = readRDS("images/00_wos.rds")
+gis_all = readRDS("images/00_gis_all.rds")
 
-# relevant <- dbGetQuery(con, "select * from wos") # wos
-# relevant2 <- dbGetQuery(con, "select * from main_qual_gis") #qual
-colnames(qual)[6] <- "id_citavi"
-relevant <- left_join(wos, qual)
-relevant <- relevant %>%
-  filter(Qual_Context == TRUE) %>%
-  filter(fidQualGIS_transfer != 7) # filter out model spatial reasoning
+#**********************************************************
+# 2 DATA PREPARATION---------------------------------------
+#**********************************************************
 
-####----
-#data
-transfer <- data.frame(w =as.character(relevant$WOS),
-                       t =relevant$fidQualGIS_transfer)
-
-soft <- data.frame(w = relevant$WOS,
-                 year = relevant$year,
-                 GIS = relevant$fidGIS)
-
-qdata <- data.frame(w = relevant$WOS,
-                    qdata = str_split_fixed(relevant$fidQualData, ";", 8))
-
-trans_soft <- left_join(soft, transfer)
-###************************
-###qdata colums------
-###************************
-
-# extracting data columns and binding them into one df
-
-iterations = 8 #
-
-i = 1
-j = 2
-for (i in 1:iterations) {
-
-  assign(paste0("data_",i), #assigning new dfs
-         data.frame(w = qdata$w,q = qdata[j]))
-
-
-  j = j +1
- print("this iteration was:")
- print(i)
- print("next column will be:")
- print(j)
-}
-
-
-library(data.table)
-x.n <- c(paste0("data_", 1:iterations))  #listing dfs
-x.list <- (lapply(x.n, get))    # getting dfs values
-dt_data_all <- rbindlist(x.list) # binding them in one df
-
-colnames(dt_data_all)[2] <- "qdata"
-
-dt_data_all$qdata[dt_data_all$qdata == "" ] <- NA
-dt_data_all <- dt_data_all[complete.cases(dt_data_all$qdata),]
-#dt_data_all <- dt_data_all[!duplicated(dt_data_all[,1]),] # just unique wos to avoid double entries
-
-dt_data_all
-
-###*************
-###renaming----
-###*************
+# join wos and qual
+relevant = left_join(wos, qual, by = c("id_citavi" = "fid_citavi"))
+relevant %<>%
+  # filter out model spatial reasoning
+  filter(fidQualGIS_transfer != 7)
+# build four tables
+transfer = select(relevant, w = WOS, t = fidQualGIS_transfer)
+soft = select(relevant, w = WOS, year = year, GIS = fidGIS)
+trans_soft = left_join(soft, transfer, by = "w")
+# qdata colums
+tmp = separate(relevant, fidQualData, into = paste0("qdata", 1:8), sep = ";")
+qdata = select(tmp, w = WOS, starts_with("qdata"))
+qdata = select(relevant, w = WOS,
+               qdata = str_split_fixed(relevant$fidQualData, ";", 8))
+# reshape
+dt_data_all = reshape2::melt(qdata, id.vars = "w")
+dt_data_all %<>%
+  select(-variable) %>%
+  rename(qdata = value) %>%
+  mutate(qdata = as.numeric(qdata)) %>%
+  # delete NAs
+  filter(!is.na(qdata))
 
 # renaming trans_soft
+trans_soft %<>% mutate_at(.funs = funs(as.factor), .vars = c("GIS", "t"))
+levels(tmp$GIS) =
+  list("No GIS" = "1", "ArcGIS" = "4",
+       "free GIS" = levels(tmp$GIS)[!levels(tmp$GIS) %in% c("1", "4")])
+levels(tmp$t) = c(NA, "Transform.", "Hyperlinks", "GIS extensions")
+# trans_soft$t[trans_soft$t == 7 ] = "Modelling spatial reasoning"
 
-trans_soft$GIS[trans_soft$GIS == 1] <- "No GIS"
-trans_soft$GIS[trans_soft$GIS == 4] <- "ArcGIS"
+# so you delete all NAs..., is this really a good idea???
+trans_soft = trans_soft[!is.na(trans_soft$t), ]
 
-trans_soft$GIS[trans_soft$GIS == 2] <- "free GIS"
-trans_soft$GIS[trans_soft$GIS == 3] <- "free GIS"
-trans_soft$GIS[trans_soft$GIS == 6] <- "free GIS"
-trans_soft$GIS[trans_soft$GIS < 9] <- "free GIS"
+# renaming dt_data_all
+dt_data_all %<>% mutate(qdata = as.factor(qdata))
+levels(dt_data_all$qdata)
+# "22" "23" "24" "25" "26" "27" "28" "29" "30" "31" "32" "33" "34" "36" "37"
+levels(dt_data_all$qdata) =
+  c("Interview", "Recording", "Photography", "Survey", "Observation",
+    "Focus Group", "Story", "Narration", "Survey", "Diary", "Observation",
+    "mapping \n Workshop", "Sketch", "Q-Survey", NA)
 
+# and again you are deleting all NAs...
+dt_data_all = dt_data_all[!is.na.(dt_data_all$qdata), ]
 
+#**********************************************************
+# 3 Total Analyse & App------------------------------------
+#**********************************************************
 
-trans_soft$t[trans_soft$t == 1 ] <-  NA
-trans_soft$t[trans_soft$t == 3 ] <- "Transform."
-trans_soft$t[trans_soft$t == 4 ] <- "Hyperlinks"
-trans_soft$t[trans_soft$t == 5 ] <- "GIS extension"
-#trans_soft$t[trans_soft$t == 7 ] <- "Modelling spatial reasoning"
-
-trans_soft <- trans_soft[complete.cases(trans_soft$t),]
-# renaming dt_data_all------------
-
-dt_data_all <- transform( dt_data_all, qdata = as.character(qdata))
-
-dt_data_all$qdata[dt_data_all$qdata == 22 ] <- "Interview"
-dt_data_all$qdata[dt_data_all$qdata == 23 ] <- "Recording"
-dt_data_all$qdata[dt_data_all$qdata == 24 ] <- "Photography"
-dt_data_all$qdata[dt_data_all$qdata == 25 ] <- "Survey"
-dt_data_all$qdata[dt_data_all$qdata == 26 ] <- "Observation"
-dt_data_all$qdata[dt_data_all$qdata == 27 ] <- "Focus Group"
-dt_data_all$qdata[dt_data_all$qdata == 28 ] <- "Story"
-dt_data_all$qdata[dt_data_all$qdata == 29 ] <- "Narration"
-dt_data_all$qdata[dt_data_all$qdata == 30 ] <- "Survey"
-dt_data_all$qdata[dt_data_all$qdata == 31 ] <- "Diary"
-dt_data_all$qdata[dt_data_all$qdata == 32 ] <- "Observation"
-dt_data_all$qdata[dt_data_all$qdata == 33 ] <- "mapping \n Workshop"
-dt_data_all$qdata[dt_data_all$qdata == 34 ] <- "Sketch"
-dt_data_all$qdata[dt_data_all$qdata == 36 ] <- "Q-Survey"
-dt_data_all$qdata[dt_data_all$qdata == 37 ] <- NA
-
-dt_data_all <- dt_data_all[complete.cases(dt_data_all$qdata),]
-##----
-#******
-
-#total Analyse & App-------
-#******
-
-kombi <- left_join(dt_data_all, trans_soft)
-kombi <- kombi[complete.cases(kombi$t),]
+kombi = left_join(dt_data_all, trans_soft)
+kombi = kombi[complete.cases(kombi$t),]
 
 # single totals----
-total_soft <- trans_soft %>%
+total_soft = trans_soft %>%
   group_by(GIS) %>%
   count(GIS, sort = TRUE)
-colnames(total_soft)[1] <- "name"
-total_soft <- as.data.frame(total_soft)
+colnames(total_soft)[1] = "name"
+total_soft = as.data.frame(total_soft)
 
 
-total_trans <- trans_soft %>%
+total_trans = trans_soft %>%
   group_by(t) %>%
   count(t, sort = TRUE)
-colnames(total_trans)[1] <- "name"
-total_trans <- as.data.frame(total_trans)
+colnames(total_trans)[1] = "name"
+total_trans = as.data.frame(total_trans)
 
-total_qdata <- dt_data_all %>%
+total_qdata = dt_data_all %>%
   group_by(qdata) %>%
   count(qdata, sort = TRUE) %>%
   filter(n > 35)
-colnames(total_qdata)[1] <- "name"
-total_qdata<- as.data.frame(total_qdata)
+colnames(total_qdata)[1] = "name"
+total_qdata= as.data.frame(total_qdata)
 
-qdata_n <- c(total_qdata$name)
+qdata_n = c(total_qdata$name)
 
 #kombi totals----
 
-total_soft_trans <- trans_soft %>%
+total_soft_trans = trans_soft %>%
   group_by(GIS, t ) %>%
   count(GIS, sort= TRUE)
-total_soft_trans <- as.data.frame(total_soft_trans)
-colnames(total_soft_trans)[1] <- "from"
-colnames(total_soft_trans)[2] <- "to"
+total_soft_trans = as.data.frame(total_soft_trans)
+colnames(total_soft_trans)[1] = "from"
+colnames(total_soft_trans)[2] = "to"
 
 
-total_trans_qdata <- kombi %>%
+total_trans_qdata = kombi %>%
   group_by(t, qdata) %>%
   count(qdata, sort = TRUE) %>%
   filter(qdata != "Sketch",
@@ -182,9 +126,9 @@ total_trans_qdata <- kombi %>%
          qdata != "Diary",
          qdata != "Q-Survey")
 
-total_trans_qdata <- as.data.frame(total_trans_qdata)
-colnames(total_trans_qdata)[1] <- "from"
-colnames(total_trans_qdata)[2] <- "to"
+total_trans_qdata = as.data.frame(total_trans_qdata)
+colnames(total_trans_qdata)[1] = "from"
+colnames(total_trans_qdata)[2] = "to"
 
 
 #*****
@@ -192,41 +136,41 @@ colnames(total_trans_qdata)[2] <- "to"
 #*****
 
 
-df_tri <- rbind(total_soft_trans, total_trans_qdata)
-df_tri <- df_tri[complete.cases(df_tri$to),]
+df_tri = rbind(total_soft_trans, total_trans_qdata)
+df_tri = df_tri[complete.cases(df_tri$to),]
 
-df_tri <- df_tri %>%
+df_tri = df_tri %>%
   filter(n > 3)
 
-meta <- bind_rows(total_qdata, total_trans, total_soft)
-levels(meta$name) <- gsub(" ", "\n", levels(meta$name))
+meta = bind_rows(total_qdata, total_trans, total_soft)
+levels(meta$name) = gsub(" ", "\n", levels(meta$name))
 
 
-meta <- cbind(meta, "x" = 0)
-meta[1:7,]$x[meta[1:7,]$x == 0] <- 1
-meta[8:10,]$x[meta[8:10,]$x == 0] <- 2
-meta[11:13,]$x[meta[11:13,]$x == 0] <- 3
+meta = cbind(meta, "x" = 0)
+meta[1:7,]$x[meta[1:7,]$x == 0] = 1
+meta[8:10,]$x[meta[8:10,]$x == 0] = 2
+meta[11:13,]$x[meta[11:13,]$x == 0] = 3
 
-meta <- cbind(meta, "y" = 0)
-meta[1:7,]$y[meta[1:7,]$y == 0] <- rev(seq(10,150, by = 15))
-meta[8:10,]$y[meta[8:10,]$y == 0] <- rev(seq(65,110, by = 15))
-meta[11:13,]$y[meta[11:13,]$y == 0] <- rev(seq(70,130, by = 30)) # ignore error
+meta = cbind(meta, "y" = 0)
+meta[1:7,]$y[meta[1:7,]$y == 0] = rev(seq(10,150, by = 15))
+meta[8:10,]$y[meta[8:10,]$y == 0] = rev(seq(65,110, by = 15))
+meta[11:13,]$y[meta[11:13,]$y == 0] = rev(seq(70,130, by = 30)) # ignore error
 
-meta <- cbind(meta, "col" = 0)
-meta[1:7,]$col[meta[1:7,]$col == 0] <- "grey"
-meta[8:10,]$col[meta[8:10,]$col == 0] <- "steelblue"
-meta[11:13,]$col[meta[11:13,]$col == 0] <- "indianred"
+meta = cbind(meta, "col" = 0)
+meta[1:7,]$col[meta[1:7,]$col == 0] = "grey"
+meta[8:10,]$col[meta[8:10,]$col == 0] = "steelblue"
+meta[11:13,]$col[meta[11:13,]$col == 0] = "indianred"
 
 
 
-colnames(df_tri)[3] <- "Combinations"
+colnames(df_tri)[3] = "Combinations"
 
 #****
 #graph----
 #****
 library(igraph)
-g <- graph.data.frame(df_tri, directed = FALSE, vertices = meta)
-lo <- layout.norm(as.matrix(meta[,2:3]))
+g = graph.data.frame(df_tri, directed = FALSE, vertices = meta)
+lo = layout.norm(as.matrix(meta[,2:3]))
 
 
 ggraph(g)+
