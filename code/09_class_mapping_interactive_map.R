@@ -79,10 +79,10 @@ clus_con <- left_join(st_as_sf(clus),wos)
 
 clus_con <- st_as_sf(clus_con)
 
-clus_con$cluster_name[clus_con$cluster == 1] <- "Infrastructure research"
-clus_con$cluster_name[clus_con$cluster == 2] <- "Ecology and landscape research"
-clus_con$cluster_name[clus_con$cluster == 3] <- "Media and technology research"
-clus_con$cluster_name[clus_con$cluster == 4] <- "Participation and community"
+clus_con$cluster_name[clus_con$cluster == 1] <- "UI cluster"
+clus_con$cluster_name[clus_con$cluster == 2] <- "EL cluster"
+clus_con$cluster_name[clus_con$cluster == 3] <- "MT cluster"
+clus_con$cluster_name[clus_con$cluster == 4] <- "PC cluster"
 
 ###popups
 clus_content <- paste(
@@ -93,38 +93,17 @@ clus_content <- paste(
   "<b>Year: </b>", clus_con$year, "</br>",
   "<b>Cluster: </b>", clus_con$cluster_name)
 
-##style & icons
-getColor <- function(clus_con) {
-  sapply(clus$cluster, function(cluster) {
-    if(cluster == 4) {
-      "red"
-    } else if(cluster == 3) {
-      "orange"
-    } else if(cluster == 2) {
-      "blue"
-    } else {
-      "purple"
-    } })
-}
-pacman::p_load(ion)
-icons <- awesomeIcons(
-  icon = 'ios-close',
-  iconColor = 'black',
-  library = 'fa',
-  markerColor = getColor(clus_con)
-)
-
+pal = RColorBrewer::brewer.pal("Set3", n =  6)[3:6]
 ##leaflet
 leaflet(clus_con) %>%
   addTiles() %>%
-  addAwesomeMarkers(data = clus_con,
-                   icon = icons,
-                   popup = as.character(clus_content)) %>%
   addProviderTiles(providers$CartoDB.PositronNoLabels, group = "Dark") %>%
+  addCircleMarkers(st_coordinates(clus_con)[,1],st_coordinates(clus_con)[,2],
+                   popup = as.character(clus_content), color = ~pal, radius =  4) %>%
   addLegend("bottomright",
-            colors =c("purple", "red", "blue", "orange"),
-                        labels= c("Infrastructure research"," Participation and community",
-                                  "Ecology and landscape research","Media and technology research"),
+            colors =c("#BEBADA", "#FB8072", "#80B1D3", "#FDB462"),
+                        labels= c("UI cluster","PC cluster",
+                                  "EL cluster","MT Cluster"),
                         title= "Clusters",
                         opacity = 1)
 
