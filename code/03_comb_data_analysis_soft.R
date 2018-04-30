@@ -15,26 +15,27 @@ pacman::p_load(ggplot2, ggthemes, tidyverse,
 #Database------
 #******
 # loads the PostgreSQL driver
-drv <- dbDriver("PostgreSQL")
+# drv <- dbDriver("PostgreSQL")
+#
+# # creates a connection to the postgres database
+# # note that "con" will be used later in each connection to the database
+# con <- dbConnect(drv, dbname = "mzsrnrwj",        #change con to elephantsql database
+#                  host = "horton.elephantsql.com", port = 5432,
+#                  user = "mzsrnrwj", password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
 
-# creates a connection to the postgres database
-# note that "con" will be used later in each connection to the database
-con <- dbConnect(drv, dbname = "mzsrnrwj",        #change con to elephantsql database
-                 host = "horton.elephantsql.com", port = 5432,
-                 user = "mzsrnrwj", password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
+abs_df <- readRDS("./images/00_abs_df.rds")
+qual <- readRDS("./images/00_qual.rds")
+tc <- readRDS("./images/00_tc.rds")
+wos <- readRDS("./images/00_wos.rds")
+gis_all <- readRDS("./images/00_gis_all.rds")
 
-
-
-relevant <- dbGetQuery(con, "select * from wos")
-relevant2 <- dbGetQuery(con, "select * from main_qual_gis")
-colnames(relevant)[1] <- "fid_citavi"
-relevant <- left_join(relevant, relevant2)
+# relevant <- dbGetQuery(con, "select * from wos") # wos
+# relevant2 <- dbGetQuery(con, "select * from main_qual_gis") #qual
+colnames(qual)[6] <- "id_citavi"
+relevant <- left_join(wos, qual)
 relevant <- relevant %>%
   filter(Qual_Context == TRUE) %>%
-  filter(fidQualGIS_transfer != 7) # filter out model spatial reasoning temp. solution
-
-
-
+  filter(fidQualGIS_transfer != 7) # filter out model spatial reasoning
 
 ####----
 #data
@@ -46,7 +47,7 @@ soft <- data.frame(w = relevant$WOS,
                  GIS = relevant$fidGIS)
 
 qdata <- data.frame(w = relevant$WOS,
-                    qdata = str_split_fixed(relevant$fidQualData, ";", 7))
+                    qdata = str_split_fixed(relevant$fidQualData, ";", 8))
 
 trans_soft <- left_join(soft, transfer)
 ###************************
@@ -55,7 +56,7 @@ trans_soft <- left_join(soft, transfer)
 
 # extracting data columns and binding them into one df
 
-iterations = 7 #
+iterations = 8 #
 
 i = 1
 j = 2
@@ -84,6 +85,7 @@ dt_data_all$qdata[dt_data_all$qdata == "" ] <- NA
 dt_data_all <- dt_data_all[complete.cases(dt_data_all$qdata),]
 #dt_data_all <- dt_data_all[!duplicated(dt_data_all[,1]),] # just unique wos to avoid double entries
 
+dt_data_all
 
 ###*************
 ###renaming----
@@ -120,9 +122,9 @@ dt_data_all$qdata[dt_data_all$qdata == 26 ] <- "Observation"
 dt_data_all$qdata[dt_data_all$qdata == 27 ] <- "Focus Group"
 dt_data_all$qdata[dt_data_all$qdata == 28 ] <- "Story"
 dt_data_all$qdata[dt_data_all$qdata == 29 ] <- "Narration"
-dt_data_all$qdata[dt_data_all$qdata == 30 ] <- "Questionnaire"
+dt_data_all$qdata[dt_data_all$qdata == 30 ] <- "Survey"
 dt_data_all$qdata[dt_data_all$qdata == 31 ] <- "Diary"
-dt_data_all$qdata[dt_data_all$qdata == 32 ] <- "Field notes"
+dt_data_all$qdata[dt_data_all$qdata == 32 ] <- "Observation"
 dt_data_all$qdata[dt_data_all$qdata == 33 ] <- "mapping \n Workshop"
 dt_data_all$qdata[dt_data_all$qdata == 34 ] <- "Sketch"
 dt_data_all$qdata[dt_data_all$qdata == 36 ] <- "Q-Survey"
@@ -155,12 +157,11 @@ total_trans <- as.data.frame(total_trans)
 total_qdata <- dt_data_all %>%
   group_by(qdata) %>%
   count(qdata, sort = TRUE) %>%
-  filter(n > 25)
+  filter(n > 35)
 colnames(total_qdata)[1] <- "name"
 total_qdata<- as.data.frame(total_qdata)
 
 qdata_n <- c(total_qdata$name)
-
 
 #kombi totals----
 
