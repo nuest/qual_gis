@@ -170,7 +170,7 @@ levels(bubbles$name) = gsub(" ", "\n", levels(bubbles$name))
 #**********************************************************
 
 g = igraph::graph.data.frame(lines, directed = FALSE, vertices = bubbles)
-lo = layout.norm(as.matrix(bubbles[, 2:3]))
+# lo = layout.norm(as.matrix(bubbles[, 2:3]))
 
 fig = ggraph(g) +
   geom_edge_link(aes(width = Combinations, alpha = Combinations),
@@ -180,8 +180,7 @@ fig = ggraph(g) +
                  hjust = 0.5, size = 4.5, parse = FALSE) +
   geom_node_label(aes(label = bubbles$n), size = 4,
                   parse = TRUE, vjust = 1.2) +
-  theme(legend.position = c("bottom"),
-        plot.margin=grid::unit(c(10,10,10,10), "mm")) +
+  theme(legend.position = c("bottom")) +
   theme_void()
 
 # save the output
