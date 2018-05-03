@@ -12,13 +12,13 @@ print(Titel)
 #************
 #Database & Data handling
 library(RODBC) # Database
-library(dplyr) 
+library(dplyr)
 library(plotly)
 #TextMine
 library(tidytext) #
 library(tidyr) #
 library(purrr) #
-library(readr) 
+library(readr)
 library(widyr) # Correlation must be installed via devtools ("dgrtwo/widyr")
 library(stringr) #
 #Visual & Plotting
@@ -57,7 +57,9 @@ relevant <- sqlQuery(con, qryRel)
 #**********************************************************
 #DATA Formatting-------------------------------
 #**********************************************************
-c1<-data.frame( w =as.character(relevant$WOS), c =str_split_fixed(relevant$fidCountries, ";", 4), y = relevant$year)
+c1 <- data.frame(w = as.character(relevant$WOS),
+                 c = str_split_fixed(relevant$fidCountries, ";", 4),
+                 y = relevant$year)
 
 c1[5] <- NULL  # deleting // just 1st Author
 c1[4] <- NULL
@@ -139,7 +141,7 @@ total_c1 <- c1 %>%
   group_by(c) %>%
   count(c)
 
-library(wpp2015)  # world population dataset 2015 
+library(wpp2015)  # world population dataset 2015
 
 data(pop)
 colnames(pop)[2] <- "c"
@@ -147,7 +149,7 @@ colnames(pop)[2] <- "c"
 total_c1 <- pop %>%
   select(c,`2015`)%>%
   left_join(total_c1, pop, by = "c") # ignore waring, caused by NAs
-  
+
 total_c1 <- total_c1[complete.cases(total_c1$n),] # remove NAs caused by spliting the country IDs
 
 total_c1 <- cbind(total_c1,"ppm"= 0)
@@ -179,24 +181,24 @@ total_c1$ppm <- mapply(perMillion,total_c1$n,total_c1$p)
 plot_country <- total_c1 %>%
   filter(n > 4) %>%
   ggplot(aes(reorder(c,n),n, fill= n)) + geom_bar(stat = "identity", show.legend = FALSE)+
-  coord_flip() + scale_y_continuous(breaks = seq(0,200,20)) + 
+  coord_flip() + scale_y_continuous(breaks = seq(0,200,20)) +
   scale_fill_gradient(high="red", low="grey") +
   theme(plot.title = element_text(lineheight=.3, face="bold"))+
   geom_text(aes(label = n), size = 3.5, alpha= 0.6, hjust = 1.6) +
   xlab("") + ylab("")+
-  theme(axis.text.y = element_text(size = 11, angle = 0)) 
+  theme(axis.text.y = element_text(size = 11, angle = 0))
 plot_country
 
 
 plot_pM <- total_c1 %>%
   filter(ppm > 0.5 & n > 2) %>%
   ggplot(aes(reorder(c,ppm),ppm, fill= ppm)) + geom_bar(stat = "identity", show.legend = FALSE)+
-  coord_flip() + scale_y_continuous(breaks = seq(0,3, 0.5)) + 
+  coord_flip() + scale_y_continuous(breaks = seq(0,3, 0.5)) +
   scale_fill_gradient(high="red", low="grey") +
   theme(plot.title = element_text(lineheight=.3, face="bold"))+
   geom_text(aes(label =format(round(ppm, 2), nsmall = 2)), size = 3.5, alpha= 0.6, hjust = 1.4) +
   xlab("") + ylab("")+
-  theme(axis.text.y = element_text(size = 11, angle = 0)) 
+  theme(axis.text.y = element_text(size = 11, angle = 0))
 plot_pM
 
 
@@ -206,13 +208,13 @@ wrap <- total_c1 %>%
 
 ggplot(aes(reorder(name, total_titel),total_titel, fill = total_titel)) +
   geom_bar(stat = "identity", show.legend = FALSE) + coord_flip()+
-  scale_y_continuous(breaks = seq(0,200,20)) + 
+  scale_y_continuous(breaks = seq(0,200,20)) +
   scale_fill_gradient(high="red", low="grey") +
   ggtitle("Veröffentlichungen pro Land") + ylab("Anzahl Veröffentlichungen") + xlab("")+
   theme(plot.title = element_text(lineheight=.3, face="bold"))+
   geom_text(aes(label = total_titel), size = 3.5, alpha= 0.6, hjust = 1.6) +
-  theme(axis.text.y = element_text(size = 11, angle = 0)) 
-  
+  theme(axis.text.y = element_text(size = 11, angle = 0))
+
 
 plot_country
 
@@ -224,10 +226,10 @@ plt_tf <-tf_idf %>%
   filter(country == "Finland" | country == "United Kingdom" | country == "Canada") %>%
   ggplot(aes(n) ) + geom_histogram(bins = "80", fill = "indianred") +
   facet_wrap(~country)+ ylab("")+
-  scale_fill_gradient(high="red", low="grey") + xlab("Worthäufigkeiten") + 
+  scale_fill_gradient(high="red", low="grey") + xlab("Worthäufigkeiten") +
   theme(strip.text.x = element_text(size = 14)) +
   theme(axis.text.y = element_text(size = 12, angle = 0), axis.text.x = element_text(size=12),
-        axis.title = element_text(size = 14)) 
+        axis.title = element_text(size = 14))
 
 
 
