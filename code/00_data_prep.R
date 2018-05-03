@@ -24,7 +24,6 @@ library("RPostgreSQL")
 # attach data
 # loads the PostgreSQL driver
 drv = dbDriver("PostgreSQL")
-
 # creates a connection to the postgres database
 # note that "con" will be used later in each connection to the database
 con = dbConnect(drv, dbname = "mzsrnrwj",
@@ -32,9 +31,24 @@ con = dbConnect(drv, dbname = "mzsrnrwj",
                 host = "horton.elephantsql.com", port = 5432,
                 user = "mzsrnrwj",
                 password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
+# what tables are available
+dbListTables(con)
+# table containing abstracts
 abs_df = dbGetQuery(con, "SELECT * FROM abstract")
+# table containing the manually collected information
 qual = dbGetQuery(con, "select * from main_qual_gis")
+# paper-specific information (author, journal, title, doi, etc.)
 wos = dbGetQuery(con, "select * from wos")
+# get the key tables
+# list of countries (key)
+cous_key = dbGetQuery(con, "select * from countries")
+# qualitative data collection method (key)
+qdata_key = dbGetQuery(con, "select * from qual_data")
+# used GIS (key)
+gis_key = dbGetQuery(con, "select * from gis_software")
+# applied GIS method (key)
+agis_key = dbGetQuery(con, "select * from qual_gis_transfer")
+# close the connection
 dbDisconnect(conn = con)
 
 # read in times cited
@@ -114,6 +128,7 @@ dim(abs_df)  # 380
 #**********************************************************
 # 3 TOTAL GIS RECORDS--------------------------------------
 #**********************************************************
+
 # search terms were:
 # GIS OR "geographic* information system"
 # year range: 1990-2017
@@ -151,6 +166,7 @@ gis_all = filter(d, PY != 2017)
 # plot(TC / sum(TC) ~ PY, gis_all, type = "l")
 # plot(n / sum(n) ~ PY, gis_all, type = "l")
 
+
 #**********************************************************
 # 4 SAVE OUTPUT--------------------------------------------
 #**********************************************************
@@ -160,3 +176,5 @@ saveRDS(qual, "images/00_qual.rds")
 saveRDS(tc, "images/00_tc.rds")
 saveRDS(wos, "images/00_wos.rds")
 saveRDS(gis_all, "images/00_gis_all.rds")
+save(cous_key, qdata_key, gis_key, agis_key,
+     file = "images/00_keys.rda")
