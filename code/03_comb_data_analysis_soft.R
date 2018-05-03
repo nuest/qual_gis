@@ -34,12 +34,29 @@ gis_all = readRDS("images/00_gis_all.rds")
 # join wos and qual
 relevant = left_join(wos, qual, by = c("id_citavi" = "fid_citavi"))
 relevant %<>%
-  # filter out model spatial reasoning
-  filter(fidQualGIS_transfer != 7)
-# build four tables
+  # filter out model spatial reasoning -> do not delete them but mutate them
+  # filter(fidQualGIS_transfer != 7)
+  mutate(fidQualGIS_transfer = ifelse(fidQualGIS_transfer == 7, NA, fidQualGIS_transfer))
+table(relevant$fidQualGIS_transfer)
+colSums(is.na(relevant))
+# build required tables
 transfer = select(relevant, w = WOS, t = fidQualGIS_transfer)
 soft = select(relevant, w = WOS, year = year, GIS = fidGIS)
 trans_soft = left_join(soft, transfer, by = "w")
+# renaming trans_soft
+trans_soft %<>% mutate_at(.funs = funs(as.factor), .vars = c("GIS", "t"))
+levels(trans_soft$GIS) =
+  list("No GIS" = "1",
+       "ArcGIS" = "4",
+       "free GIS" =
+         levels(trans_soft$GIS)[!levels(trans_soft$GIS) %in% c("1", "4")])
+levels(trans_soft$t) = c(NA, "Transform.", "Hyperlinks", "GIS extensions")
+# spatial reasoning has been deleted
+# trans_soft$t[trans_soft$t == 7 ] = "Modelling spatial reasoning"
+# so you delete all NAs..., is this really a good idea???
+colSums(is.na(trans_soft))  # ok, there are NAs
+trans_soft = trans_soft[complete.cases(trans_soft), ]
+
 # qdata colums
 tmp = separate(relevant, fidQualData, into = paste0("qdata", 1:8), sep = ";")
 qdata = select(tmp, w = WOS, starts_with("qdata"))
@@ -51,19 +68,8 @@ dt_data_all %<>%
   select(-variable) %>%
   rename(qdata = value) %>%
   mutate(qdata = as.numeric(qdata)) %>%
-  # delete NAs
+  # delete NAs (reasonable here)
   filter(!is.na(qdata))
-
-# renaming trans_soft
-trans_soft %<>% mutate_at(.funs = funs(as.factor), .vars = c("GIS", "t"))
-levels(tmp$GIS) =
-  list("No GIS" = "1", "ArcGIS" = "4",
-       "free GIS" = levels(tmp$GIS)[!levels(tmp$GIS) %in% c("1", "4")])
-levels(tmp$t) = c(NA, "Transform.", "Hyperlinks", "GIS extensions")
-# trans_soft$t[trans_soft$t == 7 ] = "Modelling spatial reasoning"
-
-# so you delete all NAs..., is this really a good idea???
-trans_soft = trans_soft[!is.na(trans_soft$t), ]
 
 # renaming dt_data_all
 dt_data_all %<>% mutate(qdata = as.factor(qdata))
@@ -75,16 +81,20 @@ levels(dt_data_all$qdata) =
     "mapping \n Workshop", "Sketch", "Q-Survey", NA)
 
 # and again you are deleting all NAs...
-dt_data_all = dt_data_all[!is.na.(dt_data_all$qdata), ]
+colSums(is.na(dt_data_all))  # 37 has been converted into NA
+filter(dt_data_all, is.na(qdata))
+dt_data_all = dt_data_all[!is.na(dt_data_all$qdata), ]
 
 #**********************************************************
 # 3 Total Analyse & App------------------------------------
 #**********************************************************
+# GO ON FROM HERE TOMORROW----
 
-kombi = left_join(dt_data_all, trans_soft)
-kombi = kombi[complete.cases(kombi$t),]
+kombi = left_join(dt_data_all, trans_soft, by = "w")
+# and again deleting NAs -> so why left join
+kombi = kombi[complete.cases(kombi$t), ]
 
-# single totals----
+# single totals
 total_soft = trans_soft %>%
   group_by(GIS) %>%
   count(GIS, sort = TRUE)
@@ -103,11 +113,9 @@ total_qdata = dt_data_all %>%
   count(qdata, sort = TRUE) %>%
   filter(n > 35)
 colnames(total_qdata)[1] = "name"
-total_qdata= as.data.frame(total_qdata)
-
 qdata_n = c(total_qdata$name)
 
-#kombi totals----
+# kombi totals----
 
 total_soft_trans = trans_soft %>%
   group_by(GIS, t ) %>%
@@ -142,41 +150,45 @@ df_tri = df_tri[complete.cases(df_tri$to),]
 df_tri = df_tri %>%
   filter(n > 3)
 
-meta = bind_rows(total_qdata, total_trans, total_soft)
+meta = bind_rows(
+  as.data.frame(mutate_if(total_qdata, is.factor, as.character)),
+  mutate_if(total_trans, is.factor, as.character),
+  mutate_if(total_soft, is.factor, as.character)
+)
 levels(meta$name) = gsub(" ", "\n", levels(meta$name))
 
 
 meta = cbind(meta, "x" = 0)
-meta[1:7,]$x[meta[1:7,]$x == 0] = 1
-meta[8:10,]$x[meta[8:10,]$x == 0] = 2
-meta[11:13,]$x[meta[11:13,]$x == 0] = 3
+meta[1:7,]$x[meta[1:7, ]$x == 0] = 1
+meta[8:10,]$x[meta[8:10, ]$x == 0] = 2
+meta[11:13,]$x[meta[11:13, ]$x == 0] = 3
 
 meta = cbind(meta, "y" = 0)
-meta[1:7,]$y[meta[1:7,]$y == 0] = rev(seq(10,150, by = 15))
-meta[8:10,]$y[meta[8:10,]$y == 0] = rev(seq(65,110, by = 15))
-meta[11:13,]$y[meta[11:13,]$y == 0] = rev(seq(70,130, by = 30)) # ignore error
+meta[1:7, ]$y[meta[1:7, ]$y == 0] = rev(seq(10, 150, by = 15))
+meta[8:10, ]$y[meta[8:10, ]$y == 0] = rev(seq(65, 110, by = 15))
+meta[11:13, ]$y[meta[11:13, ]$y == 0] = rev(seq(70, 130, by = 30)) # ignore error
 
 meta = cbind(meta, "col" = 0)
-meta[1:7,]$col[meta[1:7,]$col == 0] = "grey"
-meta[8:10,]$col[meta[8:10,]$col == 0] = "steelblue"
-meta[11:13,]$col[meta[11:13,]$col == 0] = "indianred"
-
-
+meta[1:7, ]$col[meta[1:7, ]$col == 0] = "grey"
+meta[8:10, ]$col[meta[8:10, ]$col == 0] = "steelblue"
+meta[11:13, ]$col[meta[11:13, ]$col == 0] = "indianred"
 
 colnames(df_tri)[3] = "Combinations"
 
 #****
 #graph----
 #****
+
 library(igraph)
 g = graph.data.frame(df_tri, directed = FALSE, vertices = meta)
-lo = layout.norm(as.matrix(meta[,2:3]))
+lo = layout.norm(as.matrix(meta[, 2:3]))
 
-
-ggraph(g)+
-  geom_edge_link(aes(width = Combinations, alpha = Combinations), show.legend = TRUE)+
-  geom_node_point(size = meta$n/5.5, col =meta$col) +
-  geom_node_text(aes(label = meta$name), col = "black", vjust = 0,hjust = 0.5,size = 4.5, parse = FALSE)+
+ggraph(g) +
+  geom_edge_link(aes(width = Combinations, alpha = Combinations),
+                 show.legend = TRUE) +
+  geom_node_point(size = meta$n / 5.5, col = meta$col) +
+  geom_node_text(aes(label = meta$name), col = "black", vjust = 0, hjust = 0.5,
+                 size = 4.5, parse = FALSE) +
   geom_node_label(aes(label = meta$n), size = 4, parse = TRUE, vjust = 1.2) +
-  theme(legend.position = "bottom")+
+  theme(legend.position = "bottom") +
   theme_void()
