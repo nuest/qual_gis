@@ -53,7 +53,8 @@ levels(trans_soft$GIS) =
        "ArcGIS" = "4",
        "free GIS" =
          levels(trans_soft$GIS)[!levels(trans_soft$GIS) %in% c("1", "4")])
-levels(trans_soft$t) = c(NA, "Transformations", "Hyperlinks", "GIS extensions")
+levels(trans_soft$t) =
+  c(NA, "Transfor-\nmations", "Hyperlinks", "GIS extensions")
 # spatial reasoning has been deleted
 # trans_soft$t[trans_soft$t == 7 ] = "Modelling spatial reasoning"
 colSums(is.na(trans_soft))  # ok, there are NAs
@@ -174,7 +175,7 @@ g = igraph::graph.data.frame(lines, directed = FALSE, vertices = bubbles)
 
 fig = ggraph(g) +
   geom_edge_link(aes(width = Combinations, alpha = Combinations),
-                 show.legend = TRUE) +
+                 show.legend = FALSE) +
   geom_node_point(size = bubbles$n / 10, col = bubbles$col) +
   geom_node_text(aes(label = bubbles$name), col = "black", vjust = 0,
                  hjust = 0.5, size = 4.5, parse = FALSE) +
