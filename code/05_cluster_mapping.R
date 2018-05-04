@@ -1,4 +1,4 @@
-# Filename: 08_class_mapping.R (2018-04-25)
+# Filename: 05_cluster_mapping.R (2018-04-25)
 #
 # TO DO: map kmeans classes
 #
@@ -31,7 +31,7 @@ wos = readRDS("images/00_wos.rds")
 ind = readRDS("images/04_ind.rds")
 ord = readRDS("images/04_ord.rds")
 classes = readRDS("images/04_classes.rds")
-load("images/07_p_1.rda")
+# load("images/07_p_1.rda")
 
 #**********************************************************
 # 2 STATIC CLUSTER MAP-------------------------------------

@@ -58,6 +58,8 @@ levels(trans_soft$GIS) =
        "ArcGIS" = "4",
        "free GIS" =
          levels(trans_soft$GIS)[!levels(trans_soft$GIS) %in% c("1", "4")])
+
+agis_key
 levels(trans_soft$t) =
   c(NA, "Transfor-\nmations", "Hyperlinks", "GIS extensions")
 # spatial reasoning has been deleted
@@ -80,19 +82,29 @@ qdata %<>%
   # delete NAs (reasonable here)
   filter(!is.na(qdata))
 
-# renaming qdata
-qdata %<>% mutate(qdata = as.factor(qdata))
-levels(qdata$qdata)
-# "22" "23" "24" "25" "26" "27" "28" "29" "30" "31" "32" "33" "34" "36" "37"
-levels(qdata$qdata) =
-  c("Interview", "Recording", "Photography", "Survey", "Observation",
-    "Focus Group", "Story", "Narration", "Survey", "Diary", "Observation",
-    "Mapping\nWorkshop", "Sketch", "Q-Survey", NA)
+# renaming qdata in accordance with qdata_key
+setdiff(qdata$qdata, qdata_key$idQualData)  # 36 and 37 are missing from the
+# key table
+setdiff(qdata_key$idQualData, qdata$qdata)  # 0, perfect
+# add 36 and 37
+qdata_key = add_row(qdata_key,
+                    idQualData = 36:37,
+                    Qual_Data = c("Q-Survey", NA))
+qdata = inner_join(qdata, qdata_key, by = c("qdata" = "idQualData")) %>%
+  dplyr::select(-qdata, qdata = Qual_Data) %>%
+  mutate(qdata = as.factor(qdata))
+
 # level condensing
 levels(qdata$qdata) %<>%
   fct_collapse("Interview" = c("Interview", "Recording"),
                "Narration" = c("Story", "Narration", "Diary"),
-               "Survey" = c("Survey", "Q-Survey"))
+               "Survey" = c("Survey", "Questionnaires", "Q-Survey"),
+               "Observation" = c("Observation", "Field notes"))
+# level renaming
+levels(qdata$qdata) %<>%
+  fct_recode("Focus Group" = "Focus Group Discussion",
+             "Mapping\nWorkshop" = "mapping Workshop",
+             "Sketch" = "sketch Maps")
 
 colSums(is.na(qdata))  # 37 has been converted into NA
 filter(qdata, is.na(qdata))  # 1 NA observation
@@ -190,5 +202,5 @@ fig = ggraph(g) +
   theme_void()
 
 # save the output
-ggsave("figures/spider.png", fig, width = 31, height = 19,
+ggsave("figures/03_spider.png", fig, width = 31, height = 19,
        units = "cm")
