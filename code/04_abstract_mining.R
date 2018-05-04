@@ -139,7 +139,7 @@ rownames(mat) = ids  # is the same names(abs), names(test), names(test_2)
 # order by colnames
 mat = mat[, sort(names(mat))]
 # save your result and remember that rownames(mat) correspond to abs_df$idCitavi
-# saveRDS(mat, file = "images/07_mat.rds")
+# saveRDS(mat, file = "images/04_mat.rds")
 
 #**********************************************************
 # 3 ORDINATION & CLUSTERING--------------------------------
@@ -206,14 +206,14 @@ table(classes$cluster)
 set.seed(270420182)
 ind = labdsv::indval(mat, classes$cluster, numitr = 1000)
 # save ordination/classification output
-# saveRDS(ord, "images/07_ord.rds")
-# saveRDS(classes, "images/07_classes.rds")
-# saveRDS(ind, "images/07_ind.rds")
+# saveRDS(ord, "images/04_ord.rds")
+# saveRDS(classes, "images/04_classes.rds")
+# saveRDS(ind, "images/04_ind.rds")
 
 # load classification output
-ind = readRDS("images/07_ind.rds")
-ord = readRDS("images/07_ord.rds")
-classes = readRDS("images/07_classes.rds")
+ind = readRDS("images/04_ind.rds")
+ord = readRDS("images/04_ord.rds")
+classes = readRDS("images/04_classes.rds")
 out = data.frame(
   # the indicator values for each class for each word
   ind$indval,
@@ -267,7 +267,7 @@ p_1 = ggplot(out_2) +
                                "PC cluster", "UI cluster"))
 ggsave("figures/dca.png", p_1, dpi = 300, width = 18, height = 15,
        units = "cm")
-saveRDS(p_1, "images/07_p_1.rds")
+save(p_1, "images/04_p_1.rda")
 
 #**********************************************************
 # 4 CLUSTER CENTROIDS--------------------------------------

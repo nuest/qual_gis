@@ -28,11 +28,10 @@ library("leaflet")
 # attach data
 qual = readRDS("images/00_qual.rds")
 wos = readRDS("images/00_wos.rds")
-ind = readRDS("images/07_ind.rds")
-ord = readRDS("images/07_ord.rds")
-classes = readRDS("images/07_classes.rds")
-# does not work without the data
-p_1 = readRDS("images/07_p_1.rds")
+ind = readRDS("images/04_ind.rds")
+ord = readRDS("images/04_ord.rds")
+classes = readRDS("images/04_classes.rds")
+load("images/07_p_1.rda")
 
 #**********************************************************
 # 2 STATIC CLUSTER MAP-------------------------------------
