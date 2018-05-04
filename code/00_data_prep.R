@@ -26,6 +26,7 @@ library("RPostgreSQL")
 drv = dbDriver("PostgreSQL")
 # creates a connection to the postgres database
 # note that "con" will be used later in each connection to the database
+# Internet connection required to connect to the remote DB!!!!
 con = dbConnect(drv, dbname = "mzsrnrwj",
                 # change con to elephantsql database
                 host = "horton.elephantsql.com", port = 5432,
