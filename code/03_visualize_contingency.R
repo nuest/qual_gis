@@ -28,6 +28,8 @@ qual = readRDS("images/00_qual.rds")
 tc = readRDS("images/00_tc.rds")
 wos = readRDS("images/00_wos.rds")
 gis_all = readRDS("images/00_gis_all.rds")
+# load keys
+(load("images/00_keys.rda"))
 
 #**********************************************************
 # 2 DATA PREPARATION---------------------------------------
@@ -46,7 +48,10 @@ colSums(is.na(relevant))
 transfer = select(relevant, w = WOS, t = fidQualGIS_transfer)
 soft = select(relevant, w = WOS, year = year, GIS = fidGIS)
 trans_soft = left_join(soft, transfer, by = "w")
-# renaming trans_soft levels
+# renaming trans_soft levels in accordance with gis_key
+filter(gis_key, idGIS %in% trans_soft$GIS)
+# RAP GIS is not open-source -> CLARIFICATION NEEDED!!
+table(trans_soft$GIS)  # RAP-GIS 3 times
 trans_soft %<>% mutate_at(.funs = funs(as.factor), .vars = c("GIS", "t"))
 levels(trans_soft$GIS) =
   list("No GIS" = "1",
