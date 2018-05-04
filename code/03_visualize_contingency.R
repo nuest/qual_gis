@@ -1,10 +1,10 @@
-# Filename: 03_comb_data_analysis_soft.R (2018-04-30)
+# Filename: 03_visualize_contingency.R (2018-04-30)
 #
 # TO DO:  Visualize contingency table (data collection methods, GIS methods,
 #         used GIS)
 #
 #
-# Author(s): Eric Krueger, Jannes Muenchow
+# Author(s): Jannes Muenchow, Eric Krueger
 #
 #**********************************************************
 # CONTENTS-------------------------------------------------
