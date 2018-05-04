@@ -1,6 +1,7 @@
-# Filename: 07_abs_mining.R (2017-08-30)
+# Filename: 04_abstract_mining.R (2017-08-30)
 #
-# TO DO: create word-paper matrix for ordinations and clustering
+# TO DO: create word-paper matrix for ordinations and clustering, i.e. apply
+#        a text mining approach to the words of the abstract
 #
 # Author(s): Jannes Muenchow
 #
