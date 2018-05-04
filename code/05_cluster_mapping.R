@@ -165,7 +165,7 @@ clus_content = paste(
 
 pal = RColorBrewer::brewer.pal("Set3", n =  6)[3:6]
 ## leaflet
-leaflet(clus) %>%
+m = leaflet(clus) %>%
   addTiles() %>%
   addProviderTiles(providers$CartoDB.PositronNoLabels, group = "Dark") %>%
   addCircleMarkers(st_coordinates(clus)[, 1], st_coordinates(clus)[, 2],
@@ -177,5 +177,5 @@ leaflet(clus) %>%
                        "PC Cluster","UI Cluster"),
             title = "Legend",
             opacity = 1)
-
-
+# save your output
+htmlwidgets::saveWidget(m, file = "figures/05_leaflet_clusters.html")
