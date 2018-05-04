@@ -61,38 +61,57 @@ d = left_join(select(d, fidCountries),
 # harmonize country names with pop
 setdiff(d$Country, pop$name)
 grep(pop$name, pattern = "Korea", value = TRUE)
-pop$name %<>% fct_recode("South Korea" = "Korea")
+pop$name = gsub("Republic of Korea", "South Korea", pop$name)
 grep(pop$name, pattern = "Tanzania", value = TRUE)
 grep(pop$name, pattern = "Iran", value = TRUE)
 grep(pop$name, pattern = "China", value = TRUE)
 grep(pop$name, pattern = "Venezuela", value = TRUE)
 grep(pop$name, pattern = "United", value = TRUE)
+pop$name = gsub(" of America", "", pop$name)
 pop$name = gsub(" \\(.*", "", pop$name)
 pop$name = gsub(".*Republic of ", "", pop$name)
 d$Country %<>%
   fct_recode(Finland = "Finnland",
              Belgium = "Belguim",
              China = "Republic of China",
-             "United States of America" = "USA")
+             "United States" = "USA")
 setdiff(d$Country, pop$name)  # 0, perfect
 
-# now join
+# aggregate
 d = group_by(d, Country) %>%
   dplyr::summarize(n = n()) %>%
   arrange(desc(n))
-
+# now join
 d = inner_join(d, dplyr::select(pop, name, "2015"),
                by = c("Country" = "name"))
 
 # 2.2 GPC====
-d$Country = tolower(d$Country)
-gpc$country = tolower(gpc$country)
+# more or less copied from ?chartr
+
+simple_cap = function(x) {
+  s = strsplit(x, " ")
+  sapply(s, function(x) {
+    paste(toupper(substring(x, 1, 1)), substring(x, 2),
+          sep = "", collapse = " ")
+
+  })
+  }
+gpc$country %<>%
+  tolower %>%
+  simple_cap
+
 setdiff(d$Country, gpc$country)
 grep("usa", gpc$country, value = TRUE)
-gpc$country = gsub("usa", "united states of america", gpc$country)
-gpc$country = gsub(".*china", "china", gpc$country)
-grep("england|scotland|wales|ireland", gpc$country, value = TRUE)
+gpc$country = gsub("Usa", "United States", gpc$country)
+gpc$country = gsub(".*China", "China", gpc$country)
+grep("England|Scotland|Wales|Ireland", gpc$country, value = TRUE)
 gpc$country %<>%
-  fct_collapse("united kingdom" =
-                 c("england", "scotland", "wales", "north ireland"))
+  fct_collapse("United Kingdom" =
+                 c("England", "Scotland", "Wales", "North Ireland"))
+# aggregate
+gpc = group_by(gpc, country) %>%
+  dplyr::summarize(n = sum(n)) %>%
+  dplyr::rename(n_gis = n)
+setdiff(d$Country, gpc$country)  # 0, perfect
 
+inner_join(d, gpc, by = c("Country" = "country"))
