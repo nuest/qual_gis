@@ -100,7 +100,7 @@ p_1 = xyplot(gis_all + qual_gis ~ year | class, data = d, type = "b",
 )
 
 # save figure
-png(filename = "figures/freq_cits.png", width = 18,
+png(filename = "figures/01_freq_cits.png", width = 18,
     height = 8, units = "cm", res = 300)
 print(p_1)
 grid.text("a)", x = unit(0.12, "npc"), y = unit(0.825, "npc"),

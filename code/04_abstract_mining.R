@@ -265,7 +265,7 @@ p_1 = ggplot(out_2) +
   scale_fill_manual(values = pal,
                     labels = c("EL cluster", "MT cluster",
                                "PC cluster", "UI cluster"))
-ggsave("figures/dca.png", p_1, dpi = 300, width = 18, height = 15,
+ggsave("figures/04_dca.png", p_1, dpi = 300, width = 18, height = 15,
        units = "cm")
 save(p_1, "images/04_p_1.rda")
 

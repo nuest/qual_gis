@@ -37,11 +37,6 @@ gis_all = readRDS("images/00_gis_all.rds")
 
 # join wos and qual
 relevant = left_join(wos, qual, by = c("id_citavi" = "fid_citavi"))
-relevant %<>%
-  # filter out model spatial reasoning -> do not delete them but mutate them
-  # filter(fidQualGIS_transfer != 7)
-  mutate(fidQualGIS_transfer = ifelse(fidQualGIS_transfer == 7, NA,
-                                      fidQualGIS_transfer))
 table(relevant$fidQualGIS_transfer)
 colSums(is.na(relevant))
 # build required tables
@@ -52,18 +47,28 @@ trans_soft = left_join(soft, transfer, by = "w")
 filter(gis_key, idGIS %in% trans_soft$GIS)
 # RAP GIS is not open-source -> CLARIFICATION NEEDED!!
 table(trans_soft$GIS)  # RAP-GIS 3 times
-trans_soft %<>% mutate_at(.funs = funs(as.factor), .vars = c("GIS", "t"))
+trans_soft %<>% mutate(GIS = as.factor(GIS))
 levels(trans_soft$GIS) =
   list("No GIS" = "1",
        "ArcGIS" = "4",
        "free GIS" =
          levels(trans_soft$GIS)[!levels(trans_soft$GIS) %in% c("1", "4")])
 
-agis_key
+setdiff(trans_soft$t, agis_key$idQualGIS_transfer)  # 0, perfect
+# join
+trans_soft =
+  inner_join(trans_soft, dplyr::select(agis_key, -Description),
+             by = c("t" = "idQualGIS_transfer")) %>%
+  dplyr::select(-t, t = QualGIS_transfer) %>%
+  mutate(t = as.factor(t))
+relevant %<>%
+  # filter out model spatial reasoning -> do not delete them but mutate them
+  # filter(fidQualGIS_transfer != 7)
+  mutate(fidQualGIS_transfer = ifelse(fidQualGIS_transfer == 7, NA,
+                                      fidQualGIS_transfer))
+# set "Modelling spatial reasoning to NA (-> is not really a GIS method)
 levels(trans_soft$t) =
-  c(NA, "Transfor-\nmations", "Hyperlinks", "GIS extensions")
-# spatial reasoning has been deleted
-# trans_soft$t[trans_soft$t == 7 ] = "Modelling spatial reasoning"
+  c("GIS extensions", "Hyperlinks", NA, NA, "Transfor-\nmations")
 colSums(is.na(trans_soft))  # ok, there are NAs
 # but deleting them is not really a good idea
 # trans_soft = trans_soft[complete.cases(trans_soft), ]

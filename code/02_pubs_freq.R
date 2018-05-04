@@ -136,4 +136,4 @@ tab =
 
 # Word output
 # just keep countries with > 3 qual. GIS publications
-#filter(d, n > 3) %>%
+# filter(d, n > 3) %>%
