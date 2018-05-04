@@ -130,10 +130,23 @@ tab = inner_join(tab, gpc, by = c("Country" = "country"))
 
 tab =
   mutate(tab,
-         por = n / n_gis * 100,
-         per_capita = n / (pop / 1000)) %>%
+         por = n_qual_gis / n_gis * 100,
+         per_capita = n_qual_gis / (pop / 1000)) %>%
   arrange(desc(por))
 
 # Word output
 # just keep countries with > 3 qual. GIS publications
-# filter(d, n > 3) %>%
+out = filter(tab, n_qual_gis > 3) %>%
+  select(-pop, -n_gis) %>%
+  mutate_at(.funs = funs(round(., 2)), .vars = c("por", "per_capita"))
+names(out) = c("Country", "Total",
+               "in relation to all GIS studies (%)", "per capita")
+cap = paste(": Number of all qualitative GIS studies per country (Total),",
+            "in relation to all GIS studies,",
+            "and per one million inhabitants (per capita).",
+            "Only countries with >3 publications were considered.")
+# upload the table to the Word document
+wdGet()
+wdTable(out,
+        caption = cap, pointsize = 10, align = "l", row.names = FALSE,
+        caption.pos = "above")
