@@ -177,5 +177,8 @@ m = leaflet(clus) %>%
                        "PC Cluster","UI Cluster"),
             title = "Legend",
             opacity = 1)
+
 # save your output
-htmlwidgets::saveWidget(m, file = "figures/05_leaflet_clusters.html")
+# library("htmlwidgets")
+# saveWidget(m, file = file.path(getwd(), "figures/05_leaflet_clusters.html"))
+# mapview::mapshot(m, "figures/05_leaflet_clusters")
