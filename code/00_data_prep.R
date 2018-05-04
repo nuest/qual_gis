@@ -49,6 +49,9 @@ qdata_key = dbGetQuery(con, "select * from qual_data")
 gis_key = dbGetQuery(con, "select * from gis_software")
 # applied GIS method (key)
 agis_key = dbGetQuery(con, "select * from qual_gis_transfer")
+# caqdas software
+caq_key = dbGetQuery(con, "select * from caqdas")
+gdb_key = dbGetQuery(con, "select * from geodatabase")
 # close the connection
 dbDisconnect(conn = con)
 
@@ -177,5 +180,5 @@ saveRDS(qual, "images/00_qual.rds")
 saveRDS(tc, "images/00_tc.rds")
 saveRDS(wos, "images/00_wos.rds")
 saveRDS(gis_all, "images/00_gis_all.rds")
-save(cous_key, qdata_key, gis_key, agis_key,
+save(cous_key, qdata_key, gis_key, agis_key, caq_key, gdb_key,
      file = "images/00_keys.rda")
