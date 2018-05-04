@@ -12,8 +12,9 @@
 #
 # 1. ATTACH PACKAGES AND DATA
 # 2. DATA PREPARATION
-# 3. CONTINGENCY ANALYSIS
-# 4. VISUALIZATION
+# 3. REPORTED PORTIONS
+# 4. CONTINGENCY ANALYSIS
+# 5. VISUALIZATION
 #
 #**********************************************************
 # 1 ATTACH PACKAGES AND DATA-------------------------------
@@ -54,6 +55,8 @@ levels(trans_soft$GIS) =
        "free GIS" =
          levels(trans_soft$GIS)[!levels(trans_soft$GIS) %in% c("1", "4")])
 
+
+# applied GIS method
 setdiff(trans_soft$t, agis_key$idQualGIS_transfer)  # 0, perfect
 # join
 trans_soft =
@@ -61,11 +64,6 @@ trans_soft =
              by = c("t" = "idQualGIS_transfer")) %>%
   dplyr::select(-t, t = QualGIS_transfer) %>%
   mutate(t = as.factor(t))
-relevant %<>%
-  # filter out model spatial reasoning -> do not delete them but mutate them
-  # filter(fidQualGIS_transfer != 7)
-  mutate(fidQualGIS_transfer = ifelse(fidQualGIS_transfer == 7, NA,
-                                      fidQualGIS_transfer))
 # set "Modelling spatial reasoning to NA (-> is not really a GIS method)
 levels(trans_soft$t) =
   c("GIS extensions", "Hyperlinks", NA, NA, "Transfor-\nmations")
@@ -117,10 +115,73 @@ filter(qdata, is.na(qdata))  # 1 NA observation
 qdata = qdata[!is.na(qdata$qdata), ]
 
 #**********************************************************
-# 3 CONTINGENCY ANALYSIS (GRAPH PREPARATION)---------------
+# 3 PORTIONS-----------------------------------------------
 #**********************************************************
 
-# 3.1 Graph lines==========================================
+# these portions are reported in the text
+
+# used qualitative data collection methods (portions)
+group_by(qdata, qdata) %>%
+  summarize(n = n()) %>%
+  mutate(per = n / nrow(qual) * 100) %>%
+  arrange(desc(per))
+# applied GIS methods (transformations; portions)
+group_by(trans_soft, t) %>%
+  summarize(n = n()) %>%
+  mutate(per = n / sum(n)) %>%
+  arrange(desc(per))
+# applied GIS software (portions)
+group_by(trans_soft, GIS) %>%
+  summarize(n = n()) %>%
+  mutate(per = n / sum(n)) %>%
+  arrange(desc(per))
+
+# reported CAQDAS software
+setdiff(relevant$fidCAQDAS, caq_key$idCAQDAS)  # 0, perfet
+caq = select(relevant, fidCAQDAS) %>%
+  left_join(., select(caq_key, idCAQDAS, CAQDAS_Typ),
+             by = c("fidCAQDAS" = "idCAQDAS")) %>%
+  group_by(CAQDAS_Typ) %>%
+  summarize(n = n()) %>%
+  mutate(per = n / sum(n) * 100) %>%
+  arrange(desc(per))
+filter(caq, CAQDAS_Typ != "NA") %>%
+  summarise_at(funs(sum), .vars = c("n", "per"))
+
+# reported database usage
+setdiff(relevant$fidGeodatabase, gdb_key$idGeodatabase)
+# ok, just keep the first recorded geodatabase
+gdb = select(relevant, fidGeodatabase) %>%
+  mutate(fidGeodatabase = gsub(";.*", "", fidGeodatabase)) %>%
+  mutate(fidGeodatabase = as.integer(fidGeodatabase))
+setdiff(gdb$fidGeodatabase, gdb_key$idGeodatabase)
+# anti_join(., gdb_key, by = c("fidGeodatabase" = "idGeodatabase"))
+# so there are already NAs and there is an undefined class (8)
+# I suppose empty entries can be recorded as NAs
+filter(gdb, is.na(fidGeodatabase))
+gdb %<>%
+  mutate(fidGeodatabase = ifelse(is.na(fidGeodatabase), 1, fidGeodatabase))
+gdb %<>%
+  left_join(., gdb_key, by = c("fidGeodatabase" = "idGeodatabase"))
+# add an unknown db (8)
+gdb = mutate(gdb,
+             Geodatabase = ifelse(fidGeodatabase == 8, "unknown", Geodatabase))
+
+gdb = group_by(gdb, Geodatabase) %>%
+  summarize(n = n()) %>%
+  mutate(per = n / sum(n) * 100) %>%
+  arrange(desc(per))
+
+filter(gdb, Geodatabase != "NA") %>%
+  summarize_at(funs(sum), .vars = c("n", "per"))
+# however, this also includes a category named "no Database"...
+
+
+#**********************************************************
+# 4 CONTINGENCY ANALYSIS (GRAPH PREPARATION)---------------
+#**********************************************************
+
+# 4.1 Graph lines==========================================
 #**********************************************************
 # compute combinations (contingency table) (corresponds to the lines in the
 # plot)
@@ -147,7 +208,7 @@ lines[is.na(lines)] = "NA"
 # lines = lines %>%
 #   filter(n > 3)
 
-# 3.2 Graph bubbles========================================
+# 4.2 Graph bubbles========================================
 #**********************************************************
 # compute totals for qualitative data collection method, used GIS method and
 # used GIS (corresponds to the bubbles in the plot)
@@ -189,7 +250,7 @@ levels(bubbles$name) = gsub(" ", "\n", levels(bubbles$name))
 
 
 #**********************************************************
-# 4 VISUALIZATION------------------------------------------
+# 5 VISUALIZATION------------------------------------------
 #**********************************************************
 
 g = igraph::graph.data.frame(lines, directed = FALSE, vertices = bubbles)
