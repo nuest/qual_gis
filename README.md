@@ -14,3 +14,5 @@ on the applied data analysis methodology.
 * [data](https://github.com/EricKrg/qual_gis/tree/master/data)
 * [figures](https://github.com/EricKrg/qual_gis/tree/master/figures)
 * [wos_query](https://github.com/EricKrg/qual_gis/tree/master/wos_query)
+
+### [Interactive Map](http://mccoy.geogr.uni-jena.de:3838/eric/cluster_map/)
