@@ -45,7 +45,7 @@ transfer = select(relevant, w = WOS, t = fidQualGIS_transfer)
 soft = select(relevant, w = WOS, year = year, GIS = fidGIS)
 trans_soft = left_join(soft, transfer, by = "w")
 # renaming trans_soft levels in accordance with gis_key
-filter(gis_key, idGIS %in% trans_soft$GIS)
+filter(gis_key, id_gis %in% trans_soft$GIS)
 # RAP GIS is not open-source -> CLARIFICATION NEEDED!!
 table(trans_soft$GIS)  # RAP-GIS 3 times
 trans_soft %<>% mutate(GIS = as.factor(GIS))
