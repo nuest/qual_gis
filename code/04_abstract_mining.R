@@ -309,8 +309,8 @@ rownames(dists) = rownames(x)
 out = lapply(seq_len(ncol(dists)), function(i) {
   # make sure to only select points belonging to the corresponding cluster
   tmp = dists[x$class == i, ]
-  # now select the ten closest points
-  rownames(tmp[order(tmp[, i]), ])[1:15]
+  # now select the twenty closest points
+  rownames(tmp[order(tmp[, i]), ])[1:20]
 })
 # check
 x[out[[1]], ]  # ok
@@ -326,8 +326,9 @@ names(res) = c("class", "id_citavi")
 res = inner_join(dplyr::select(abs_df, -abstract), res, by = "id_citavi")
 
 res = group_by(res, class) %>%
-  top_n(5, tc) %>%
+  # top_n(15, tc) %>%
   arrange(class, desc(tc))
+
 # to find the right cluster names, use the ordination plot
 p_1
 
@@ -335,6 +336,9 @@ res$class = as.factor(res$class)
 levels(res$class) =
   c("Ecology and landscape", "Media and technology",
     "Participation and community", "Urban and infrastructure")
+
+# add data collection methods, GIS methods, used GIS
+
 
 # save your output
 # write.csv2(res, file = "C:/Users/pi37pat/Desktop/centroids.csv",
