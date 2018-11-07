@@ -113,6 +113,9 @@ filter(qdata, is.na(qdata))  # 1 NA observation
 # I think it's ok to delete it here
 qdata = qdata[!is.na(qdata$qdata), ]
 
+trans_soft_qd = full_join(trans_soft, qdata, by = "w")
+saveRDS(trans_soft_qd, file = "images/03_trans_soft_qd.rds")
+
 #**********************************************************
 # 3 PORTIONS-----------------------------------------------
 #**********************************************************
@@ -124,11 +127,13 @@ group_by(qdata, qdata) %>%
   summarize(n = n()) %>%
   mutate(per = n / nrow(qual) * 100) %>%
   arrange(desc(per))
+
 # applied GIS methods (transformations; portions)
 group_by(trans_soft, t) %>%
   summarize(n = n()) %>%
   mutate(per = n / sum(n)) %>%
   arrange(desc(per))
+
 # applied GIS software (portions)
 group_by(trans_soft, GIS) %>%
   summarize(n = n()) %>%
