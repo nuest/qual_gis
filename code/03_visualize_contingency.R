@@ -21,8 +21,7 @@
 #**********************************************************
 
 # attach packages
-pacman::p_load(forcats, ggplot2, ggthemes, tidyverse,
-               stringr, plotly, ggraph, igraph, magrittr)
+pacman::p_load(ggthemes, tidyverse, plotly, ggraph, igraph, magrittr)
 # attach data
 abs_df = readRDS("images/00_abs_df.rds")
 qual = readRDS("images/00_qual.rds")
@@ -45,7 +44,7 @@ transfer = select(relevant, w = WOS, t = fidQualGIS_transfer)
 soft = select(relevant, w = WOS, year = year, GIS = fidGIS)
 trans_soft = left_join(soft, transfer, by = "w")
 # renaming trans_soft levels in accordance with gis_key
-filter(gis_key, id_gis %in% trans_soft$GIS)
+filter(gis_key, idGIS %in% trans_soft$GIS)
 # RAP GIS is not open-source -> CLARIFICATION NEEDED!!
 table(trans_soft$GIS)  # RAP-GIS 3 times
 trans_soft %<>% mutate(GIS = as.factor(GIS))
@@ -176,7 +175,6 @@ filter(gdb, Geodatabase != "NA") %>%
   summarize_at(funs(sum), .vars = c("n", "per"))
 # however, this also includes a category named "no Database"...
 
-
 #**********************************************************
 # 4 CONTINGENCY ANALYSIS (GRAPH PREPARATION)---------------
 #**********************************************************
@@ -247,7 +245,6 @@ bubbles = bind_rows(total_qdata, total_trans, total_soft) %>%
   mutate_if(is.factor, as.character)
 bubbles[is.na(bubbles)] = "NA"
 levels(bubbles$name) = gsub(" ", "\n", levels(bubbles$name))
-
 
 #**********************************************************
 # 5 VISUALIZATION------------------------------------------
