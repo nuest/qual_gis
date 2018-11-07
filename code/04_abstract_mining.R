@@ -28,11 +28,17 @@ library("ggplot2")
 library("vegan")
 library("labdsv")
 library("tidyverse")
+library("magrittr")
 
 # attach data
+# abstracts
 abs_df = readRDS("images/00_abs_df.rds")
+# wos id
 wos = readRDS("images/00_wos.rds")
+# times cited
 tc = readRDS("images/00_tc.rds")
+# transformation, used gis, qualitative data 
+trans_soft_qd = readRDS("images/03_trans_soft_qd.rds")
 
 #**********************************************************
 # 2 EXPLORATION--------------------------------------------
@@ -339,6 +345,38 @@ levels(res$class) =
 
 # add data collection methods, GIS methods, used GIS
 
+# check if there are studies which use more than 1 GIS
+tmp = group_by(trans_soft_qd, w) %>% 
+  summarize(n = n_distinct(GIS)) %>% 
+  pull(n) != 1
+sum(tmp)  # 0
+# check if there are studies which use more than transformation method
+tmp = group_by(trans_soft_qd, w) %>% 
+  summarize(n = n_distinct(t)) %>% 
+  pull(n) != 1
+sum(tmp)  # 0
+# ok, in this case let's put all qualitative data collection methods in one col
+# but before doing so, let us rename certain factor levels
+levels(trans_soft_qd$qdata) %<>%
+  fct_recode("Mapping Workshop" = "Mapping\nWorkshop")
+levels(trans_soft_qd$t) %<>% 
+  fct_recode("Transformations" = "Transfor-\nmations")
+trans_soft_qd = group_by(trans_soft_qd, w) %>%
+  # put all qualitative data collection methods into one column
+  mutate(qd = paste(unique(qdata), collapse = ";")) %>%
+  # just keep the first row of each group
+  slice(1) %>%
+  select(-qdata)
+dim(trans_soft_qd)  # 380 rows, perfect
+
+# TO DO: there are studies in which the same qualitative data collection method
+# was recorded more than once, pls change in 03_visualize_contingency.R
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!------------------------------
+  
+res = left_join(select(res, WOS, year, titel, tc, class),
+                select(trans_soft_qd, -year), by = c("WOS" = "w"))
+setnames(res, c("WOS", "titel", "GIS", "t", "qd"), 
+         c("wos_id", "title", "used_GIS", "data_transform", "collect_meth"))
 
 # save your output
 # write.csv2(res, file = "C:/Users/pi37pat/Desktop/centroids.csv",
