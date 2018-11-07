@@ -146,7 +146,7 @@ mat = mat[, sort(names(mat))]
 #**********************************************************
 
 # load the input data
-mat = readRDS("images/07_mat.rds")
+mat = readRDS("images/04_mat.rds")
 # presence-absence matrix
 # mat[mat > 0] = mat[mat > 0]^0
 
