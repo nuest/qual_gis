@@ -272,3 +272,39 @@ fig = ggraph(g) +
 # save the output
 ggsave("figures/03_spider.png", fig, width = 31, height = 19,
        units = "cm")
+
+#**********************************************************
+# 6 ALLUVIAL-----------------------------------------------
+#**********************************************************
+
+library("alluvial")
+
+dim(qdata)
+dim(trans_soft)
+setdiff(qdata$w, trans_soft$w)
+ind = setdiff(trans_soft$w, qdata$w)  # wos ids not occurring in qdata
+filter(trans_soft, w %in% ind)
+n_distinct(qdata$w)
+# this means, we don't have a qdata observation for these WOS (I'd say)
+# let's check, qdata was created from df relevant and col fidQualData
+filter(relevant, WOS %in% ind) %>% select(fidQualData)  # NAs, good
+
+d = left_join(trans_soft, qdata, by = "w")
+d = select(d, -w, -year)
+d %<>% group_by(qdata, t, GIS) %>%
+  summarise(n = n())
+colSums(is.na(d))
+filter(d, is.na(qdata) | is.na(t))
+d$t = as.character(d$t)
+d[is.na(d$t), "t"] = "NA"
+d$qdata = as.character(d$qdata)
+d[is.na(d$qdata), "qdata"] = "NA"
+# define ordering
+ord = list(NULL, NULL, NULL)
+
+alluvial(d[, 1:3], freq = d$n, 
+         col = ifelse(d$GIS == "No GIS", "grey", "orange"),
+         border = ifelse(d$GIS == "No GIS", "grey", "orange"),
+         hide = d$n == 0,
+         cex = 0.6, 
+         ordering = ord)
