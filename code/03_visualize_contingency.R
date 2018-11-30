@@ -114,7 +114,7 @@ filter(qdata, is.na(qdata))  # 1 NA observation
 qdata = qdata[!is.na(qdata$qdata), ]
 
 trans_soft_qd = full_join(trans_soft, qdata, by = "w")
-saveRDS(trans_soft_qd, file = "images/03_trans_soft_qd.rds")
+# saveRDS(trans_soft_qd, file = "images/03_trans_soft_qd.rds")
 
 #**********************************************************
 # 3 PORTIONS-----------------------------------------------
@@ -299,12 +299,30 @@ d$t = as.character(d$t)
 d[is.na(d$t), "t"] = "NA"
 d$qdata = as.character(d$qdata)
 d[is.na(d$qdata), "qdata"] = "NA"
-# define ordering
-ord = list(NULL, NULL, NULL)
+# d$qdata = as.factor(d$qdata)
+# levels(d$qdata) = c("NA", names(sort(table(qdata$qdata))))
 
-alluvial(d[, 1:3], freq = d$n, 
+alluvial(d[, c(1:3)], freq = d$n, 
          col = ifelse(d$GIS == "No GIS", "grey", "orange"),
          border = ifelse(d$GIS == "No GIS", "grey", "orange"),
          hide = d$n == 0,
-         cex = 0.6, 
-         ordering = ord)
+         cex = 0.6)
+
+library("ggalluvial")
+d$qdata = as.factor(d$qdata)
+d$t = as.factor(d$t)
+# changing factor levels leads to very strange results...
+# levels(d$t) = c("GIS extensions", "Hyperlinks", "NA", "Transformations")
+# change order of the levels
+# you have to add a final level NA
+# levels(d$qdata) = c("NA", names(sort(table(qdata$qdata))))
+# levels(d$GIS) = c("ArcGIS", "free GIS", "No GIS")  # this only changes the labels but not the flows...
+d_2 = to_lodes_form(d, key = "qdata", axes = c(1:2))
+ggplot(data = d_2,
+       aes(x = qdata, stratum = stratum, alluvium = alluvium,
+           y = n, label = stratum)) +
+  geom_alluvium(aes(fill = GIS)) +
+  geom_stratum(width = 0.35) +
+  geom_text(stat = "stratum") +
+  theme_void()  # theme_minimal()
+
