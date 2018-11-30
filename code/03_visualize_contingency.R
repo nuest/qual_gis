@@ -322,7 +322,9 @@ ggplot(data = d_2,
        aes(x = qdata, stratum = stratum, alluvium = alluvium,
            y = n, label = stratum)) +
   geom_alluvium(aes(fill = GIS)) +
-  geom_stratum(width = 0.35) +
+  geom_stratum(width = 0.35, ) +
   geom_text(stat = "stratum") +
   theme_void()  # theme_minimal()
 
+# https://github.com/corybrunson/ggalluvial/issues/13
+# hava a look at function parameter relevel.strata
