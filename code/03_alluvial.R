@@ -95,13 +95,20 @@ qdata_key = add_row(qdata_key,
 qdata = inner_join(qdata, qdata_key, by = c("qdata" = "idQualData")) %>%
   dplyr::select(-qdata, qdata = Qual_Data) %>%
   mutate(qdata = as.factor(qdata))
-
+group_by(qdata, w) %>% filter(duplicated(qdata))  # no duplicates, perfect
 # level condensing
 levels(qdata$qdata) %<>%
   fct_collapse("Interview" = c("Interview", "Recording"),
                "Narration" = c("Story", "Narration", "Diary"),
                "Survey" = c("Survey", "Questionnaires", "Q-Survey"),
                "Observation" = c("Observation", "Field notes"))
+group_by(qdata, w) %>% filter(duplicated(qdata))  # 140 duplicates (915 obs)
+# level condesing has led to duplicated data collection methods per 
+# WOS ID, just keep unique ones
+qdata = group_by(qdata, w) %>%
+  filter(!duplicated(qdata)) %>%
+  ungroup  # 775
+
 # level renaming
 levels(qdata$qdata) %<>%
   fct_recode("Focus Group" = "Focus Group Discussion",
@@ -110,8 +117,9 @@ levels(qdata$qdata) %<>%
 
 colSums(is.na(qdata))  # 37 has been converted into NA
 filter(qdata, is.na(qdata))  # 1 NA observation
-# I think it's ok to delete it here
-qdata = qdata[!is.na(qdata$qdata), ]
+# I think it's ok to delete it here, not really because this study hasn't
+# indicated a data collection method
+# qdata = qdata[!is.na(qdata$qdata), ]
 
 trans_soft_qd = full_join(trans_soft, qdata, by = "w")
 # saveRDS(trans_soft_qd, file = "images/03_trans_soft_qd.rds")
@@ -197,7 +205,7 @@ n_distinct(qdata$w)
 # this means, we don't have a qdata observation for these WOS (I'd say)
 # let's check, qdata was created from df relevant and col fidQualData
 filter(relevant, WOS %in% ind) %>% select(fidQualData)  # NAs, good
-
+# so, we have to join the NA qdata again
 d = left_join(trans_soft, qdata, by = "w")
 d = select(d, -w, -year)
 d %<>% group_by(qdata, t, GIS) %>%
@@ -236,7 +244,12 @@ g = ggplot(data = d_2,
   geom_stratum(width = 0.35) +
   geom_text(stat = "stratum", cex = 2.5) +
   theme_void(base_size = 6.5)  # theme_minimal()
+g
 ggsave("figures/03_alluvial.png", g, width = 15, height = 15 / 1.688, units = "cm", dpi = 300)
+
+# find out why there are NAs in the data collection method axes!
+# because there were NAs in the beginning!
+filter(relevant, fidQualData == "") %>% select(WOS, fidQualData)
 
 # https://github.com/corybrunson/ggalluvial/issues/13
 # hava a look at function parameter relevel.strata
