@@ -370,7 +370,7 @@ trans_soft_qd = group_by(trans_soft_qd, w) %>%
 dim(trans_soft_qd)  # 380 rows, perfect
 
 # TO DO: there are studies in which the same qualitative data collection method
-# was recorded more than once, pls change in 03_visualize_contingency.R
+# was recorded more than once, pls change in 03_alluvial.R
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!------------------------------
   
 res = left_join(select(res, WOS, year, titel, tc, class),
