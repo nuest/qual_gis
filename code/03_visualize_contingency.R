@@ -274,9 +274,11 @@ ggsave("figures/03_spider.png", fig, width = 31, height = 19,
        units = "cm")
 
 #**********************************************************
-# 6 ALLUVIAL-----------------------------------------------
+# 6 ALLUVIAL DIAGRAM---------------------------------------
 #**********************************************************
 
+# Method 1: alluvial=======================================
+#**********************************************************
 library("alluvial")
 
 dim(qdata)
@@ -308,6 +310,8 @@ alluvial(d[, c(1:3)], freq = d$n,
          hide = d$n == 0,
          cex = 0.6)
 
+# Method 2: ggalluvial=====================================
+#**********************************************************
 library("ggalluvial")
 d$qdata = as.factor(d$qdata)
 d$t = as.factor(d$t)
@@ -318,13 +322,14 @@ d$t = as.factor(d$t)
 # levels(d$qdata) = c("NA", names(sort(table(qdata$qdata))))
 # levels(d$GIS) = c("ArcGIS", "free GIS", "No GIS")  # this only changes the labels but not the flows...
 d_2 = to_lodes_form(d, key = "qdata", axes = c(1:2))
-ggplot(data = d_2,
+g = ggplot(data = d_2,
        aes(x = qdata, stratum = stratum, alluvium = alluvium,
            y = n, label = stratum)) +
   geom_alluvium(aes(fill = GIS)) +
-  geom_stratum(width = 0.35, ) +
-  geom_text(stat = "stratum") +
-  theme_void()  # theme_minimal()
+  geom_stratum(width = 0.35) +
+  geom_text(stat = "stratum", cex = 2.5) +
+  theme_void(base_size = 6.5)  # theme_minimal()
+ggsave("figures/03_alluvial.png", g, width = 15, height = 15 / 1.688, units = "cm", dpi = 300)
 
 # https://github.com/corybrunson/ggalluvial/issues/13
 # hava a look at function parameter relevel.strata
