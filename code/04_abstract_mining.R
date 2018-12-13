@@ -361,6 +361,8 @@ levels(trans_soft_qd$qdata) %<>%
   fct_recode("Mapping Workshop" = "Mapping\nWorkshop")
 levels(trans_soft_qd$t) %<>% 
   fct_recode("Transformations" = "Transfor-\nmations")
+
+# GO ON FROM HERE TOMORROW------------!!!!!!!!!!!!!!!!!!!!!!!!!!!
 trans_soft_qd = group_by(trans_soft_qd, w) %>%
   # put all qualitative data collection methods into one column
   mutate(qd = paste(unique(qdata), collapse = ";")) %>%
@@ -369,10 +371,6 @@ trans_soft_qd = group_by(trans_soft_qd, w) %>%
   select(-qdata)
 dim(trans_soft_qd)  # 380 rows, perfect
 
-# TO DO: there are studies in which the same qualitative data collection method
-# was recorded more than once, pls change in 03_alluvial.R
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!------------------------------
-  
 res = left_join(select(res, WOS, year, titel, tc, class),
                 select(trans_soft_qd, -year), by = c("WOS" = "w"))
 setnames(res, c("WOS", "titel", "GIS", "t", "qd"), 
