@@ -1,7 +1,7 @@
-# Filename: 03_visualize_contingency.R (2018-04-30)
+# Filename: 03_alluvial.R (2018-04-30)
 #
 # TO DO:  Visualize contingency table (data collection methods, GIS methods,
-#         used GIS)
+#         used GIS), i.e. create an alluvial diagram
 #
 #
 # Author(s): Jannes Muenchow, Eric Krueger
