@@ -249,7 +249,7 @@ ggsave("figures/03_alluvial.png", g, width = 15, height = 15 / 1.688, units = "c
 
 # find out why there are NAs in the data collection method axes!
 # because there were NAs in the beginning!
-filter(relevant, fidQualData == "") %>% select(WOS, fidQualData)
+# filter(relevant, fidQualData == "") %>% select(WOS, fidQualData)
 
 # https://github.com/corybrunson/ggalluvial/issues/13
 # hava a look at function parameter relevel.strata
