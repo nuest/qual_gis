@@ -83,10 +83,92 @@ qdata = compute_percentage(cat = "qdata")
 qdata = reshape2::dcast(qdata, formula = cluster ~ qdata, value.var = "percent")
 
 # construct output table
-plyr::join_all(list(select(tab, -median_year), 
+out = plyr::join_all(list(select(tab, -median_year), 
                     gis, 
                     select(transf, -"NA"), 
                     select(qdata, "cluster", "Interview", "Mapping\nWorkshop", "Survey")),
                     by = "cluster")
 
-               
+library("flextable")
+library("officer")
+
+# create gis barplots
+d = select(out, "cluster", "No GIS", "ArcGIS", "free GIS") %>%
+  reshape2::melt(., id.var = "cluster")
+levels(d$variable)
+save_barplot(d, "~/Desktop/bar_gis_")
+
+# create geoprocessing barplots
+d = select(out, "cluster", "GIS extensions", "Hyperlinks",
+       "Transformations" = "Transfor-\nmations") %>%
+  reshape2::melt(., id.vars = "cluster")
+levels(d$variable)
+save_barplot(d, "~/Desktop/bar_geopro_")
+
+# create data collection barplots
+d = select(out, "cluster", "Interview", "Survey", 
+           "Mapping Workshop" = "Mapping\nWorkshop") %>%
+  reshape2::melt(., id.vars = "cluster")
+levels(d$variable)
+save_barplot(d, "~/Desktop/bar_dc_")
+
+# create a flextable
+tab = out[, 1:2]
+tab[, c("gis", "geopro", "dc")] = NA
+ft = flextable(tab) 
+ft = set_header_labels(ft,
+                       gis = "Used GIS (%)", 
+                       geopro = "Applied geoprocessing (%)",
+                       dc = "Data collection method (%)")
+ft = align(ft, align = "center", part = "header")
+ft = align(ft, align = "center")
+# add barplots to the flextable
+gis_src = paste0("~/Desktop/bar_gis_", 1:4, ".png")
+ft = display(ft,
+        i = 1:4,
+        col_key = "gis", 
+        pattern = "{{pic}}",
+        formatters = 
+          list(pic ~ as_image("gis", src = gis_src, width = 1.8,
+                              height = 0.9)))
+geopro_src = paste0("~/Desktop/bar_geopro_", 1:4, ".png")
+ft = display(ft,
+             i = 1:4,
+             col_key = "geopro", 
+             pattern = "{{pic}}",
+             formatters = 
+               list(pic ~ as_image("geopro",
+                                   src = geopro_src, width = 1.8,
+                                   height = 0.9)))
+dc_src = paste0("~/Desktop/bar_dc_", 1:4, ".png")
+ft = display(ft,
+             i = 1:4,
+             col_key = "dc", 
+             pattern = "{{pic}}",
+             formatters = 
+               list(pic ~ as_image("dc",
+                                   src = dc_src, width = 1.8,
+                                   height = 0.9)))
+ft
+
+
+out_2 = select(out, -n, -mean_author)
+d = reshape2::melt(out_2, id.var = "cluster")
+d$group_variable = rep(c("GIS", "geopro", "dc"), each = 12)
+library("lattice")
+b_1 = barchart(value ~ variable | factor(group_variable) + factor(cluster), 
+               data = d,
+               groups = factor(group_variable), 
+               stack = TRUE,
+               # auto.key = list(title = "Group variable", columns = 3),
+               scales = list(relation = list(x = "free"),
+                             x = list(rot = 45, cex = 0.5)))
+
+library("latticeExtra")
+useOuterStrips(
+  b_1, 
+  strip = strip.custom(bg = c("white"),
+                       par.strip.text = list(cex = 0.8)),
+  strip.left = strip.custom(bg = "white", 
+                            par.strip.text = list(cex = 0.8))
+)
