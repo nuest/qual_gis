@@ -10,7 +10,8 @@
 #**********************************************************
 #
 # 1. ATTACH PACKAGES AND DATA
-# 2.
+# 2. DATA PREPARATION
+# 3. CREATE TABLE/FIGURE
 #
 #**********************************************************
 # 1 ATTACH PACKAGES AND DATA-------------------------------
@@ -22,8 +23,7 @@ library("dplyr")
 # attach data
 qual = readRDS("images/00_qual.rds")
 wos = readRDS("images/00_wos.rds")
-# ind = readRDS("images/04_ind.rds")
-# ord = readRDS("images/04_ord.rds")
+tc = readRDS("images/00_tc.rds")
 classes = readRDS("images/04_classes.rds")
 tmp = readRDS("images/03_trans_soft_qd.rds")
 
@@ -48,11 +48,20 @@ setdiff(clus$id_citavi, qual$fid_citavi)
 setdiff(clus$id_citavi, wos$id_citavi)
 clus = inner_join(clus, select(wos, year, no_authors, WOS, id_citavi),
                   by = "id_citavi")
-
+# add times cited
+setdiff(clus$WOS, tc$WOS)
+setdiff(tc$WOS, clus$WOS) 
+# 13 WOS missing, this is because there was no abstract for thirteen pubs,
+# hence, we could not assign them a cluster categorie (which was based on the
+# abstract words)
+clus = inner_join(clus, select(tc, -year), by = "WOS")
+# I guess the year is not that important
+boxplot(clus$year ~ clus$cluster)
 tab = group_by(clus, cluster) %>%
   summarize(n = n(),
-            median_year = median(year),
-            mean_author = round(mean(no_authors), 2))
+            # median_year = median(year),
+            mean_author = round(mean(no_authors), 2),
+            mean_tc = mean(tc))
 tab
 
 # join GIS & Co.
@@ -74,56 +83,85 @@ compute_percentage = function(df = clus, group = "cluster", cat) {
 }
 
 gis = compute_percentage(cat = "GIS")
-gis = reshape2::dcast(gis, formula = cluster ~ GIS, value.var = "percent")
-
+# gis = reshape2::dcast(gis, formula = cluster ~ GIS, value.var = "percent")
+gis = dplyr::rename(gis, feature = GIS) %>%
+  mutate(cat = "GIS")
 transf = compute_percentage(cat = "t")
-transf = reshape2::dcast(transf, formula = cluster ~ t, value.var = "percent")
+# transf = reshape2::dcast(transf, formula = cluster ~ t, value.var = "percent")
+# gp = geoprocessing
+transf = dplyr::rename(transf, feature = t) %>%
+  mutate(cat = "gp")
 
 qdata = compute_percentage(cat = "qdata")
-qdata = reshape2::dcast(qdata, formula = cluster ~ qdata, value.var = "percent")
+# qdata = reshape2::dcast(qdata, formula = cluster ~ qdata, value.var = "percent")
+# dc = data collection
+qdata = dplyr::rename(qdata, feature = "qdata") %>%
+  mutate(cat = "dc")
 
 # construct output table
-out = plyr::join_all(list(select(tab, -median_year), 
-                    gis, 
-                    select(transf, -"NA"), 
-                    select(qdata, "cluster", "Interview", "Mapping\nWorkshop", "Survey")),
-                    by = "cluster")
+out = rbind(gis, transf, qdata)
 
+#**********************************************************
+# 3 CREATE TABLE/FIGURE------------------------------------
+#**********************************************************
+
+# 3.1 Table version========================================
+#**********************************************************
+# attach further necessary packages
 library("flextable")
 library("officer")
+# source your own barplot function
+source("code/funs.R")
 
 # create gis barplots
-d = select(out, "cluster", "No GIS", "ArcGIS", "free GIS") %>%
-  reshape2::melt(., id.var = "cluster")
-levels(d$variable)
-save_barplot(d, "~/Desktop/bar_gis_")
+d = filter(out, cat == "GIS")
+save_barplot(d, value = "percent", bar_name = "feature", 
+             dir_name = "figures/bars/bar_gis_")
 
 # create geoprocessing barplots
-d = select(out, "cluster", "GIS extensions", "Hyperlinks",
-       "Transformations" = "Transfor-\nmations") %>%
-  reshape2::melt(., id.vars = "cluster")
-levels(d$variable)
-save_barplot(d, "~/Desktop/bar_geopro_")
+d = filter(out, cat == "gp") %>%
+  mutate(feature = gsub("-\\n", "", feature),
+         feature = forcats::fct_explicit_na(feature))
+save_barplot(d, value = "percent", bar_name = "feature",
+             dir_name = "figures/bars/bar_geopro_")
 
 # create data collection barplots
-d = select(out, "cluster", "Interview", "Survey", 
-           "Mapping Workshop" = "Mapping\nWorkshop") %>%
-  reshape2::melt(., id.vars = "cluster")
-levels(d$variable)
-save_barplot(d, "~/Desktop/bar_dc_")
+
+# first, find out which are the most widely used dc methods
+filter(out, cat == "dc") %>%
+  group_by(cluster) %>% arrange(cluster, desc(percent)) %>% slice(1:4) 
+# filter the two most important dc methods of each cluster
+d = filter(out, cat == "dc" & feature %in% 
+             c("Mapping\nWorkshop", "Survey", NA, "Narration")) %>%
+  mutate(feature = gsub("\\n", " ", feature))
+# ok, Narration is not available for cluster 1...
+# so, add it
+d = ungroup(d) %>%
+  mutate(feature = as.factor(feature)) %>%
+  mutate(feature = forcats::fct_explicit_na(feature)) %>%
+  # add Narration to cluster 1
+  complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
+
+
+save_barplot(d, value = "percent", bar_name = "feature", 
+             dir_name = "figures/bars/bar_dc_")
 
 # create a flextable
-tab = out[, 1:2]
-tab[, c("gis", "geopro", "dc")] = NA
-ft = flextable(tab) 
+tab_2 = tab
+tab_2 = mutate_at(tab_2, .vars = c("mean_author", "mean_tc"),
+          .funs = function(x) as.numeric(as.character(round(x, 1)))
+       )
+tab_2[, c("gis", "geopro", "dc")] = NA
+ft = flextable(tab_2) 
 ft = set_header_labels(ft,
                        gis = "Used GIS (%)", 
                        geopro = "Applied geoprocessing (%)",
                        dc = "Data collection method (%)")
 ft = align(ft, align = "center", part = "header")
 ft = align(ft, align = "center")
+ft = colformat_num(ft, digits = 1, col_keys = c("mean_author", "mean_tc"))
 # add barplots to the flextable
-gis_src = paste0("~/Desktop/bar_gis_", 1:4, ".png")
+gis_src = paste0("figures/bars/bar_gis_", 1:4, ".png")
 ft = display(ft,
         i = 1:4,
         col_key = "gis", 
@@ -131,7 +169,7 @@ ft = display(ft,
         formatters = 
           list(pic ~ as_image("gis", src = gis_src, width = 1.8,
                               height = 0.9)))
-geopro_src = paste0("~/Desktop/bar_geopro_", 1:4, ".png")
+geopro_src = paste0("figures/bars/bar_geopro_", 1:4, ".png")
 ft = display(ft,
              i = 1:4,
              col_key = "geopro", 
@@ -140,7 +178,7 @@ ft = display(ft,
                list(pic ~ as_image("geopro",
                                    src = geopro_src, width = 1.8,
                                    height = 0.9)))
-dc_src = paste0("~/Desktop/bar_dc_", 1:4, ".png")
+dc_src = paste0("figures/bars/bar_dc_", 1:4, ".png")
 ft = display(ft,
              i = 1:4,
              col_key = "dc", 
@@ -152,6 +190,8 @@ ft = display(ft,
 ft
 
 
+# 3.2 Lattice version======================================
+#**********************************************************
 out_2 = select(out, -n, -mean_author)
 d = reshape2::melt(out_2, id.var = "cluster")
 d$group_variable = rep(c("GIS", "geopro", "dc"), each = 12)
