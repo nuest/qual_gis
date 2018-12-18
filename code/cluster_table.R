@@ -52,14 +52,6 @@ setdiff(tc$WOS, clus$WOS)
 # hence, we could not assign them a cluster categorie (which was based on the
 # abstract words)
 clus = inner_join(clus, dplyr::select(tc, -year), by = "WOS")
-# I guess the year is not that important
-boxplot(clus$year ~ clus$cluster)
-tab = group_by(clus, cluster) %>%
-  summarize(n = n(),
-            # median_year = median(year),
-            mean_author = round(mean(no_authors), 2),
-            mean_tc = mean(tc))
-tab
 
 # join GIS & Co.
 setdiff(clus$WOS, tmp$w)
@@ -110,6 +102,8 @@ library("officer")
 # source your own barplot function
 source("code/funs.R")
 
+# 3.1.1 Barplots###########################################
+#**********************************************************
 # create gis barplots
 d = filter(out, cat == "GIS")
 d[d$feature == "No GIS", "feature"] = NA
@@ -127,7 +121,6 @@ save_barplot(d, value = "percent", bar_name = "feature",
              dir_name = "figures/bars/bar_geopro_")
 
 # create data collection barplots
-
 # first, find out which are the most widely used dc methods
 filter(out, cat == "dc") %>%
   group_by(cluster) %>% arrange(cluster, desc(percent)) %>% slice(1:4) 
@@ -147,20 +140,40 @@ d = ungroup(d) %>%
 save_barplot(d, value = "percent", bar_name = "feature", 
              dir_name = "figures/bars/bar_dc_")
 
-# create a flextable
+# 3.1.2 Create a flextable#################################
+#**********************************************************
+# I guess the year is not that important, so delete it
+boxplot(clus$year ~ clus$cluster)
+# summary table (which forms the basis of the subsequent flextable)
+tab = group_by(clus, cluster) %>%
+  summarize(n = n(),
+            # median_year = median(year),
+            mean_author = round(mean(no_authors), 2),
+            mean_tc = mean(tc))
+# have a peak
+tab
+
+# create the flextable
 tab_2 = tab
+# not sure how to tell a flextable to round, I have only figured out how to
+# display only a certain number of digits. Therefore, round the numbers, convert
+# them into a character and back into numerics
 tab_2 = mutate_at(tab_2, .vars = c("mean_author", "mean_tc"),
           .funs = function(x) as.numeric(as.character(round(x, 1)))
        )
+# add three columns which should hold the barplots
 tab_2[, c("gis", "geopro", "dc")] = NA
 ft = flextable(tab_2) 
+# specify how the columns should be named in the output table
 ft = set_header_labels(ft,
                        gis = "Used GIS (%)", 
                        geopro = "Applied geoprocessing (%)",
                        dc = "Data collection\nmethod (%)")
+# align
 ft = align(ft, align = "center", part = "header")
 ft = align(ft, align= "left", part = "header", j = c("gis", "geopro", "dc"))
 ft = align(ft, align = "center")
+# make sure that only one digit is shown in the case of numeric columns
 ft = colformat_num(ft, digits = 1, col_keys = c("mean_author", "mean_tc"))
 # add barplots to the flextable
 gis_src = paste0("figures/bars/bar_gis_", levels(clus$cluster), ".png")
@@ -189,23 +202,36 @@ ft = display(ft,
                list(pic ~ as_image("dc",
                                    src = dc_src, width = 1.8,
                                    height = 0.9)))
+# have a look at the output
 ft
 
 # 3.2 Lattice version======================================
 #**********************************************************
-out_2 = select(out, -n, -mean_author)
-d = reshape2::melt(out_2, id.var = "cluster")
-d$group_variable = rep(c("GIS", "geopro", "dc"), each = 12)
 library("lattice")
-b_1 = barchart(value ~ variable | factor(group_variable) + factor(cluster), 
-               data = d,
-               groups = factor(group_variable), 
+library("latticeExtra")
+
+out_2 = out
+del = filter(out_2, cat == "dc" & 
+               !feature %in% c("Mapping\nWorkshop", "Survey", "Narration") & 
+               !is.na(feature)) %>%
+  pull(feature) %>%
+  unique
+out_2 = filter(out_2, !feature %in% del)
+out_2[is.na(out_2$feature), "feature"] = "(Missing)"
+out_2$feature = gsub("Mapping\nWorkshop", "MapWS", out_2$feature)
+out_2$feature = gsub("No GIS", "(Missing)", out_2$feature)
+out_2$feature = gsub("Transfor-\nmations", "Transformations", out_2$feature)
+out_2 = ungroup(out_2) %>% 
+  complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
+
+b_1 = barchart(feature ~ percent | cat + cluster, 
+               data = as.data.frame(out_2),
+               groups = cat, 
                stack = TRUE,
                # auto.key = list(title = "Group variable", columns = 3),
-               scales = list(relation = list(x = "free"),
+               scales = list(y = list(relation = "free"),
                              x = list(rot = 45, cex = 0.5)))
 
-library("latticeExtra")
 useOuterStrips(
   b_1, 
   strip = strip.custom(bg = c("white"),
@@ -213,3 +239,4 @@ useOuterStrips(
   strip.left = strip.custom(bg = "white", 
                             par.strip.text = list(cex = 0.8))
 )
+
