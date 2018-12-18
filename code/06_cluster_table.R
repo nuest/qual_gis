@@ -96,7 +96,7 @@ out = rbind(gis, transf, qdata)
 library("flextable")
 library("officer")
 # source your own barplot function
-source("code/funs.R")
+source("code/helper_funs.R")
 
 # 3.1.1 Barplots###########################################
 #**********************************************************
