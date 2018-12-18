@@ -1,7 +1,7 @@
 # Filename: cluster_table.R (2018-11-29)
 #
-# TO DO: cluster table: n, mean(citations), median year, pie charts used
-# methods, used GIS, used transformations
+# TO DO: cluster table: n, mean(authors), mean(citations), barcharts 
+#        representing used GIS, geoprocessing method and data collection method
 #
 # Author(s): Jannes Muenchow
 #
@@ -27,14 +27,10 @@ tc = readRDS("images/00_tc.rds")
 clus = readRDS("images/04_classes_df.rds")
 tmp = readRDS("images/03_trans_soft_qd.rds")
 
-# To do: build a table with n per cluster, mean citations and create pie charts
-# or alike for GIS, transformation and data collection method per class or
-# portion of the most prominent GIS/collection/transformation category
-
 # steps
 # 1. add wos to qual 
 # 2. add qual to classes via id_citavi 
-# 3. join with 03_trans_soft_qd.rd -> create pie charts per class
+# 3. join with 03_trans_soft_qd.rd -> create barcharts per class
 
 #**********************************************************
 # 2 DATA PREPARATION---------------------------------------
