@@ -24,7 +24,7 @@ library("dplyr")
 qual = readRDS("images/00_qual.rds")
 wos = readRDS("images/00_wos.rds")
 tc = readRDS("images/00_tc.rds")
-classes = readRDS("images/04_classes.rds")
+clus = readRDS("images/04_classes_df.rds")
 tmp = readRDS("images/03_trans_soft_qd.rds")
 
 # To do: build a table with n per cluster, mean citations and create pie charts
@@ -40,13 +40,10 @@ tmp = readRDS("images/03_trans_soft_qd.rds")
 # 2 DATA PREPARATION---------------------------------------
 #**********************************************************
 
-# rownames correspond to id_citavi
-clus = data.frame(cluster = classes$cluster)
-clus$id_citavi = as.numeric(rownames(clus))
 # sum(rownames(clus) == rownames(mat)) == nrow(mat)  # TRUE, perfect
 setdiff(clus$id_citavi, qual$fid_citavi)
 setdiff(clus$id_citavi, wos$id_citavi)
-clus = inner_join(clus, select(wos, year, no_authors, WOS, id_citavi),
+clus = inner_join(clus, dplyr::select(wos, year, no_authors, WOS, id_citavi),
                   by = "id_citavi")
 # add times cited
 setdiff(clus$WOS, tc$WOS)
@@ -54,7 +51,7 @@ setdiff(tc$WOS, clus$WOS)
 # 13 WOS missing, this is because there was no abstract for thirteen pubs,
 # hence, we could not assign them a cluster categorie (which was based on the
 # abstract words)
-clus = inner_join(clus, select(tc, -year), by = "WOS")
+clus = inner_join(clus, dplyr::select(tc, -year), by = "WOS")
 # I guess the year is not that important
 boxplot(clus$year ~ clus$cluster)
 tab = group_by(clus, cluster) %>%
@@ -71,7 +68,7 @@ tmp = group_by(clus, cluster, GIS) %>%
   summarize(n = n()) %>%
   mutate(total = sum(n),
          percent = round(n / total * 100)) %>%
-  select(cluster, GIS, percent) %>%
+  dplyr::select(cluster, GIS, percent) %>%
   reshape2::dcast(formula = cluster ~ GIS, value = percent)
 
 compute_percentage = function(df = clus, group = "cluster", cat) {
@@ -115,6 +112,10 @@ source("code/funs.R")
 
 # create gis barplots
 d = filter(out, cat == "GIS")
+d[d$feature == "No GIS", "feature"] = NA
+d = mutate(d, 
+           feature = as.factor(feature),
+           feature = forcats::fct_explicit_na(feature))
 save_barplot(d, value = "percent", bar_name = "feature", 
              dir_name = "figures/bars/bar_gis_")
 
@@ -142,7 +143,7 @@ d = ungroup(d) %>%
   # add Narration to cluster 1
   complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
 
-
+# create data collection barplots
 save_barplot(d, value = "percent", bar_name = "feature", 
              dir_name = "figures/bars/bar_dc_")
 
@@ -156,12 +157,13 @@ ft = flextable(tab_2)
 ft = set_header_labels(ft,
                        gis = "Used GIS (%)", 
                        geopro = "Applied geoprocessing (%)",
-                       dc = "Data collection method (%)")
+                       dc = "Data collection\nmethod (%)")
 ft = align(ft, align = "center", part = "header")
+ft = align(ft, align= "left", part = "header", j = c("gis", "geopro", "dc"))
 ft = align(ft, align = "center")
 ft = colformat_num(ft, digits = 1, col_keys = c("mean_author", "mean_tc"))
 # add barplots to the flextable
-gis_src = paste0("figures/bars/bar_gis_", 1:4, ".png")
+gis_src = paste0("figures/bars/bar_gis_", levels(clus$cluster), ".png")
 ft = display(ft,
         i = 1:4,
         col_key = "gis", 
@@ -169,7 +171,7 @@ ft = display(ft,
         formatters = 
           list(pic ~ as_image("gis", src = gis_src, width = 1.8,
                               height = 0.9)))
-geopro_src = paste0("figures/bars/bar_geopro_", 1:4, ".png")
+geopro_src = paste0("figures/bars/bar_geopro_", levels(clus$cluster), ".png")
 ft = display(ft,
              i = 1:4,
              col_key = "geopro", 
@@ -178,7 +180,7 @@ ft = display(ft,
                list(pic ~ as_image("geopro",
                                    src = geopro_src, width = 1.8,
                                    height = 0.9)))
-dc_src = paste0("figures/bars/bar_dc_", 1:4, ".png")
+dc_src = paste0("figures/bars/bar_dc_", levels(clus$cluster), ".png")
 ft = display(ft,
              i = 1:4,
              col_key = "dc", 
@@ -188,7 +190,6 @@ ft = display(ft,
                                    src = dc_src, width = 1.8,
                                    height = 0.9)))
 ft
-
 
 # 3.2 Lattice version======================================
 #**********************************************************
