@@ -268,6 +268,8 @@ p_1 = ggplot(out_2) +
   labs(x = "scores 1st axis", y = "scores 2nd axis") +
   guides(fill = ggplot2::guide_legend(title = NULL)) +
   theme_classic(base_size = 12) +
+  # check labels in case you classify anew since categories are assigned
+  # randomly meaning that "EL cluster" could be 2 next time instead of 1
   scale_fill_manual(values = pal,
                     labels = c("EL cluster", "MT cluster",
                                "PC cluster", "UI cluster"))
@@ -275,22 +277,31 @@ ggsave("figures/04_dca.png", p_1, dpi = 300, width = 18, height = 15,
        units = "cm")
 save(p_1, "images/04_p_1.rda")
 
+# rownames correspond to id_citavi
+clus = data.frame(cluster = classes$cluster)
+# check
+# identical(tibble::rownames_to_column(clus)$rowname, rownames(clus))
+clus = tibble::rownames_to_column(clus, var = "id_citavi") %>%
+  mutate(cluster = as.factor(cluster))
+levels(clus$cluster) = c(c("EL", "MT", "PC", "UI"))
+saveRDS(clus, "images/04_classes_df.rds")
+
 #**********************************************************
 # 4 CLUSTER CENTROIDS--------------------------------------
 #**********************************************************
-#
-# abs_df = readRDS("images/00_abs_df.rds")
+
+abs_df = readRDS("images/00_abs_df.rds")
 tc = readRDS("images/00_tc.rds")
 wos = readRDS("images/00_wos.rds")
-# # if abs_df and wos were loaded anew, you have to add  id_citavi again
-# abs_df = inner_join(abs_df, dplyr::select(wos, WOS, id_citavi),
-#                     by = "WOS")
+# if abs_df and wos were loaded anew, you have to add  id_citavi again
+abs_df = inner_join(abs_df, dplyr::select(wos, WOS, id_citavi),
+                    by = "WOS")
 
 # add times cited
 abs_df = inner_join(abs_df, dplyr::select(tc, tc, WOS), by = "WOS")
 
 # find cluster centroids (centers) in ordination space
-x = data.frame(scores(ord, display = "sites")[, 1:2], class = classes$cluster)
+x = data.frame(scores(ord, display = "sites")[, 1:2], class = clus$cluster)
 plot(x[, 1:2], col = classes$cluster, pch = 16)
 cen = group_by(x, class) %>%
   summarize_all(funs(mean))
@@ -314,7 +325,7 @@ rownames(dists) = rownames(x)
 # find the 5 closest points to each centroid
 out = lapply(seq_len(ncol(dists)), function(i) {
   # make sure to only select points belonging to the corresponding cluster
-  tmp = dists[x$class == i, ]
+  tmp = dists[x$class == levels(x$class)[i], ]
   # now select the twenty closest points
   rownames(tmp[order(tmp[, i]), ])[1:20]
 })
@@ -322,7 +333,7 @@ out = lapply(seq_len(ncol(dists)), function(i) {
 x[out[[1]], ]  # ok
 x[out[[2]], ]  # ok
 i = 2
-filter(x, class == i) %>% dplyr::select(-class) %>% plot
+filter(x, class == levels(x$class)[i]) %>% dplyr::select(-class) %>% plot
 points(cen[i, c("DCA1", "DCA2")], cex = 3, pch = 16,  col = "yellow")
 points(dplyr::select(x[out[[i]], ], -class), pch = 16, col = "lightblue")
 
@@ -334,14 +345,6 @@ res = inner_join(dplyr::select(abs_df, -abstract), res, by = "id_citavi")
 res = group_by(res, class) %>%
   # top_n(15, tc) %>%
   arrange(class, desc(tc))
-
-# to find the right cluster names, use the ordination plot
-p_1
-
-res$class = as.factor(res$class)
-levels(res$class) =
-  c("Ecology and landscape", "Media and technology",
-    "Participation and community", "Urban and infrastructure")
 
 # add data collection methods, GIS methods, used GIS
 
@@ -355,12 +358,6 @@ tmp = group_by(trans_soft_qd, w) %>%
   summarize(n = n_distinct(t)) %>% 
   pull(n) != 1
 sum(tmp)  # 0
-# ok, in this case let's put all qualitative data collection methods in one col
-# but before doing so, let us rename certain factor levels
-levels(trans_soft_qd$qdata) %<>%
-  fct_recode("Mapping Workshop" = "Mapping\nWorkshop")
-levels(trans_soft_qd$t) %<>% 
-  fct_recode("Transformations" = "Transfor-\nmations")
 
 # GO ON FROM HERE TOMORROW------------!!!!!!!!!!!!!!!!!!!!!!!!!!!
 trans_soft_qd = group_by(trans_soft_qd, w) %>%
@@ -368,13 +365,13 @@ trans_soft_qd = group_by(trans_soft_qd, w) %>%
   mutate(qd = paste(unique(qdata), collapse = ";")) %>%
   # just keep the first row of each group
   slice(1) %>%
-  select(-qdata)
+  dplyr::select(-qdata)
 dim(trans_soft_qd)  # 380 rows, perfect
 
-res = left_join(select(res, WOS, year, titel, tc, class),
-                select(trans_soft_qd, -year), by = c("WOS" = "w"))
+res = left_join(dplyr::select(res, WOS, year, titel, tc, class),
+                dplyr::select(trans_soft_qd, -year), by = c("WOS" = "w"))
 setnames(res, c("WOS", "titel", "GIS", "t", "qd"), 
-         c("wos_id", "title", "used_GIS", "data_transform", "collect_meth"))
+         c("wos_id", "title", "used_GIS", "geoprocessing", "collect_meth"))
 
 # save your output
 # write.csv2(res, file = "C:/Users/pi37pat/Desktop/centroids.csv",
