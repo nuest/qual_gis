@@ -41,7 +41,6 @@ clus = readRDS("images/04_classes_df.rds")
 setdiff(clus$id_citavi, qual$fid_citavi)
 # 13 manuscripts without an abstract
 setdiff(qual$fid_citavi, clus$id_citavi)
-clus = mutate(clus, id_citavi = as.integer(id_citavi))
 clus = inner_join(clus,
                   dplyr::select(qual, fid_citavi, lat = Latitude,
                                 lon = Longtitude),

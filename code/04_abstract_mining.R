@@ -282,7 +282,8 @@ clus = data.frame(cluster = classes$cluster)
 # check
 # identical(tibble::rownames_to_column(clus)$rowname, rownames(clus))
 clus = tibble::rownames_to_column(clus, var = "id_citavi") %>%
-  mutate(cluster = as.factor(cluster))
+  mutate(id_citavi = as.integer(id_citavi),
+         cluster = as.factor(cluster))
 levels(clus$cluster) = c(c("EL", "MT", "PC", "UI"))
 saveRDS(clus, "images/04_classes_df.rds")
 
