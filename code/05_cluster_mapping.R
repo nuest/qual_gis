@@ -30,20 +30,18 @@ qual = readRDS("images/00_qual.rds")
 wos = readRDS("images/00_wos.rds")
 ind = readRDS("images/04_ind.rds")
 ord = readRDS("images/04_ord.rds")
-classes = readRDS("images/04_classes.rds")
+clus = readRDS("images/04_classes_df.rds")
 # load("images/07_p_1.rda")
 
 #**********************************************************
 # 2 STATIC CLUSTER MAP-------------------------------------
 #**********************************************************
 
-# rownames correspond to id_citavi
-clus = data.frame(cluster = classes$cluster)
-clus$id_citavi = as.numeric(rownames(clus))
 # sum(rownames(clus) == rownames(mat)) == nrow(mat)  # TRUE, perfect
 setdiff(clus$id_citavi, qual$fid_citavi)
 # 13 manuscripts without an abstract
 setdiff(qual$fid_citavi, clus$id_citavi)
+clus = mutate(clus, id_citavi = as.integer(id_citavi))
 clus = inner_join(clus,
                   dplyr::select(qual, fid_citavi, lat = Latitude,
                                 lon = Longtitude),
@@ -70,7 +68,6 @@ filter(qual, fid_citavi %in% ind)
 filter(wos, id_citavi %in% c(109, 448))
 # ok, first article is located in Hawaii, second in Polynesia, perfect
 
-
 x = clus[, c("lon", "lat", "cluster")]
 coordinates(clus) =~ lon + lat
 
@@ -87,10 +84,10 @@ spplot(clus, "cluster", col.regions = pal, border = "black", cex = 0.75,
            args = list(
              key = list(
                at = 0:4,
-               col = rev(pal), width = 1, height = 0.5,
+               col = pal, width = 1, height = 0.5,
                labels = list(
                at = seq(0.5, 3.5, 1),
-               labels = paste("cluster", 4:1))
+               labels = levels(clus$cluster))
              )
            ))),
        sp.layout = list(
@@ -99,32 +96,22 @@ spplot(clus, "cluster", col.regions = pal, border = "black", cex = 0.75,
               first = TRUE)
        ))
 
-# # using lattice Extra...
-# library(latticeExtra)
-# library(sp)
-# loadMeuse()
-# levelplot(zinc~x+y, as.data.frame(meuse), panel=panel.levelplot.points,
-#           aspect = "iso", scales = list(draw=FALSE), xlab=NULL, ylab = NULL,
-#           colorkey = list(space = "bottom", width = 0.2, height = 2))
-# levelplot(cluster~lat+lon, as.data.frame(clus), panel = panel.levelplot.points,
-#           apsect = "iso", scales = list(draw=FALSE), xlab=NULL, ylab = NULL,
-#           colorkey = list(space = "bottom", width = 2, height = 0.2))
-
-
-# in fact, spplot.points uses xyplot (see github sp)
-xyplot(coordinates(clus)[, 2] ~ coordinates(clus)[, 1], asp = "iso", col = pal,
-       pch = 20,
-       key = list(points = list(fill = pal, pch = 21,
-                                border = "black", cex = 2),
-                  space = "right",
-                  text = list(paste("cluster", 1:4))))
+# # in fact, spplot.points uses xyplot (see github sp)
+# xyplot(coordinates(clus)[, 2] ~ coordinates(clus)[, 1], asp = "iso", col = pal,
+#        pch = 20,
+#        key = list(points = list(fill = pal, pch = 21,
+#                                 border = "black", cex = 2),
+#                   space = "right",
+#                   text = list(paste("cluster", 1:4)))
+#        )
+# # sth. not right with the point coloring but not important here...
 
 map = spplot(clus, "cluster", col.regions = pal, cex = 0.8,
              key.space = "right",
              key = list(
                points = list(fill = pal, pch = 21, border = "black",
                              cex = 1.5),
-               text = list(paste(c("EL", "MT", "PC", "UI"), "cluster"),
+               text = list(paste(levels(clus$cluster), "cluster"),
                            cex = 0.8)
              ),
              sp.layout = list(
@@ -145,14 +132,13 @@ dev.off()
 #**********************************************************
 
 # reproject again
-
 clus =
   # first transfrom since gdal of sf doesn't like "+proj=wintri"
   spTransform(clus, CRSobj = "+init=epsg:4326") %>%
   st_as_sf %>%
   left_join(., wos, by = "id_citavi")
-
-levels(clus$cluster) = c("EL cluster", "MT cluster", "PC cluster", "UI cluster")
+# rename levels properly
+levels(clus$cluster) = paste(levels(clus$cluster), "cluster")
 
 # popups
 clus_content = paste(
@@ -163,8 +149,8 @@ clus_content = paste(
   "<b>Year: </b>", clus$year, "</br>",
   "<b>Cluster: </b>", clus$cluster)
 
-pal = RColorBrewer::brewer.pal("Set3", n =  6)[3:6]
-## leaflet
+pal = RColorBrewer::brewer.pal("Set3", n = 6)[3:6]
+# leaflet
 m = leaflet(clus) %>%
   addTiles() %>%
   addProviderTiles(providers$CartoDB.PositronNoLabels, group = "Dark") %>%
@@ -173,8 +159,7 @@ m = leaflet(clus) %>%
                    radius =  4) %>%
   addLegend("bottomright",
             colors = pal,
-            labels = c("EL Cluster","MT Cluster",
-                       "PC Cluster","UI Cluster"),
+            labels = levels(clus$cluster),
             title = "Legend",
             opacity = 1)
 
