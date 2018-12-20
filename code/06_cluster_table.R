@@ -23,9 +23,12 @@ library("dplyr")
 # attach data
 qual = readRDS("images/00_qual.rds")
 wos = readRDS("images/00_wos.rds")
+# times cited
 tc = readRDS("images/00_tc.rds")
+# k-mean cluster categories in a dataframe
 clus = readRDS("images/04_classes_df.rds")
-tmp = readRDS("images/03_trans_soft_qd.rds")
+# data collection method
+dc = readRDS("images/03_trans_soft_qd.rds")
 
 # steps
 # 1. add wos to qual 
@@ -50,16 +53,16 @@ setdiff(tc$WOS, clus$WOS)
 clus = inner_join(clus, dplyr::select(tc, -year), by = "WOS")
 
 # join GIS & Co.
-setdiff(clus$WOS, tmp$w)
-clus = inner_join(clus, tmp, by = c("WOS" = "w"))
-tmp = group_by(clus, cluster, GIS) %>%
+setdiff(clus$WOS, dc$w)
+clus_molt = inner_join(clus, select(dc, -year), by = c("WOS" = "w"))
+tmp = group_by(clus_molt, cluster, GIS) %>%
   summarize(n = n()) %>%
   mutate(total = sum(n),
          percent = round(n / total * 100)) %>%
   dplyr::select(cluster, GIS, percent) %>%
   reshape2::dcast(formula = cluster ~ GIS, value = percent)
 
-compute_percentage = function(df = clus, group = "cluster", cat) {
+compute_percentage = function(df = clus_molt, group = "cluster", cat) {
   group_by_(df, group, cat) %>%
     summarize(n = n()) %>%
     mutate(total = sum(n),
@@ -130,7 +133,7 @@ d = ungroup(d) %>%
   mutate(feature = as.factor(feature)) %>%
   mutate(feature = forcats::fct_explicit_na(feature)) %>%
   # add Narration to cluster 1
-  complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
+  tidyr::complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
 
 # create data collection barplots
 save_barplot(d, value = "percent", bar_name = "feature", 
@@ -138,6 +141,7 @@ save_barplot(d, value = "percent", bar_name = "feature",
 
 # 3.1.2 Create a flextable#################################
 #**********************************************************
+
 # I guess the year is not that important, so delete it
 boxplot(clus$year ~ clus$cluster)
 # summary table (which forms the basis of the subsequent flextable)
@@ -200,6 +204,9 @@ ft = display(ft,
                                    height = 0.9)))
 # have a look at the output
 ft
+doc = read_docx(path = "~/Desktop/test.docx")
+doc = body_add_flextable(doc, value = ft)
+print(doc, target = "~/Desktop/test2.docx")
 
 # 3.2 Lattice version======================================
 #**********************************************************
