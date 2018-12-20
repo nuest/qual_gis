@@ -72,9 +72,8 @@ colSums(is.na(trans_soft))  # ok, there are NAs
 
 # Data collection methods (qdata colums)
 qdata = separate(relevant, fidQualData, into = paste0("qdata", 1:8), sep = ";")
-qdata = select(qdata, w = WOS, starts_with("qdata"))
-qdata = select(relevant, w = WOS,
-               qdata = str_split_fixed(relevant$fidQualData, ";", 8))
+qdata = dplyr::select(qdata, w = WOS, starts_with("qdata"))
+
 # reshape
 qdata = reshape2::melt(qdata, id.vars = "w")
 qdata %<>%
