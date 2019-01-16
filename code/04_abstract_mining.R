@@ -224,15 +224,15 @@ fviz_nbclust(scores(ord, display = "species", choices = 1:2), hcut,
 # clustering class 1 might become class 3)
 
 # To make cluster results reproducible, set a seed
-set.seed(13012019)
+set.seed(16012019)
 classes = kmeans(scores(ord, display = "species", choices = 1:2), 4)
 table(classes$cluster)
 
 # save classification output
-saveRDS(classes, "images/04_classes.rds")
+# saveRDS(classes, "images/04_classes.rds")
 
 #**********************************************************
-# 4 Visualization - DCA biplot-----------------------------
+# 4 Visualization - DCA-custer biplot----------------------
 #**********************************************************
 
 # attach ordination/classification output
@@ -257,7 +257,7 @@ out = data.frame(
 
 out_2 = group_by(out, class) %>%
   arrange(desc(n)) %>%
-  slice(1:20) %>%
+  slice(1:15) %>%
   as.data.frame
 
 # define color palette
