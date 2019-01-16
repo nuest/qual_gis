@@ -287,28 +287,6 @@ levels(clus$cluster) = c(c("EL", "MT", "PC", "UI"))
 saveRDS(clus, "images/04_classes_df.rds")
 
 #**********************************************************
-# WORD-COMBINATION ORDINATION------------------------------
-#**********************************************************
-
-# "ecosystem services", "land use", "children GIS", "geographic information",
-# etc. yeah, would be interesting but maybe is too much for this paper... also
-# interesting to discuss other clustering (kmean, pam, etc) and ordination
-# techniques (NMDS, Isomap)
-x <- tmp$Abstract[1]
-text_1 <- str_split(x, pattern = " ") %>%
-  unlist %>%
-  gsub("\\.|;|:|,", "", .)
-table(text_1) %>%
-  sort
-text_2 <- paste(text_1, text_1[-1])
-# the last one is due to recycling, so remove it
-text_2 <- text_2[-length(text_2)]
-table(text_2) %>%
-  sort
-
-
-
-#**********************************************************
 # OPEN-SOURCE GIS USAGE------------------------------------
 #**********************************************************
 
