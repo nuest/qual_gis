@@ -27,7 +27,6 @@ library("tm")
 # devtools::install_github("vegandevs/vegan")
 library("vegan")  
 library("tidyverse")
-library("magrittr")
 
 # attach data
 # abstracts
@@ -75,24 +74,31 @@ abs[grep(" DOI:", abs)]
 # delete
 abs = gsub(" DOI:.*", "", abs)
 
-# grep("•", abs, value = TRUE)
-# # replace
-# abs = gsub("•", " ", abs)
-
 # find land use
 grep("land use", abs)
 abs = gsub("land use", "landuse", abs)
 ids = names(abs)
 # delete punctuation and alike
+# just checking what will be remove and what not
+str_replace_all(c(":hal^l2o!>/", "ha.<lo$2", "^serv12}us"), 
+                "([:punct:]|[:digit:]|[:cntrl:])", "")
 abs = str_replace_all(abs, "[:punct:]|[:digit:]|[:cntrl:]", "") %>%
   stripWhitespace()
+which(sapply(str_extract_all(abs, "\\$|\\^|\\}"), length) > 0)
+which(sapply(str_extract_all(abs, "<|>"), length) > 0)
+abs = str_replace_all(abs, "[<>\\$\\^\\{\\}]", "")
 
-# stop_words = c(stopwords("English"),
-#                c("due", "also", "however", "using", "within", "therefore",
-#                  "like"))
-stop_words = c(stopwords("SMART"),
-               c("due", "also", "however", "using", "within", "therefore",
-                 "like"))
+# what about web addresses
+sapply(str_extract_all(abs, "www|http"), length) > 0
+# ok, delete web addresses
+# find www or http and then go til the next empty space (non-greedy) or if there
+# is no space just go to the end (can happen when the web address is the last
+# word of an abstract)
+# str_extract_all(abs, "(www|http)(.*? |.*)")
+abs = str_replace_all(abs, "(www|http)(.*? |.*)", "")
+
+# remove stop words
+stop_words = c(stopwords("SMART"), c("due"))
 # abs have lost their names, give them back!!
 names(abs) = ids
 test = lapply(abs, function(x) {
@@ -103,14 +109,13 @@ test = lapply(abs, function(x) {
   stemDocument(x_2, language = "eng")
 })
 
-tmp <- do.call(c, test)
+tmp = do.call(c, test)
 # can we delete these characters?
 sort(table(tmp[sapply(tmp, nchar) < 3]))
 # yes, I guess, we can
 test = lapply(test, function(x) {
   x[nchar(x) > 3]
 })
-
 
 # GOT RID OF SPANISH ABSTRACTS BY MANUALLY DELETING THEM IN THE DB
 # ind = sapply(test, function(x) {
@@ -143,7 +148,12 @@ rownames(mat) = ids  # is the same names(abs), names(test), names(test_2)
 # identical(names(abs), names(tes))
 # order by colnames
 mat = mat[, sort(names(mat))]
-# save your result and remember that rownames(mat) correspond to abs_df$idCitavi
+grep("enviro", names(mat), value = TRUE)
+grep("environmentalchang", abs)  # 363
+# in the original abstract, it says 'environmental-change',
+# 'human-environmental', not much we can do about that 
+
+# save your result and remember that rownames(mat) correspond to abs_df$idCitavi 
 # saveRDS(mat, file = "images/04_mat.rds")
 
 #**********************************************************
