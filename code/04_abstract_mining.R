@@ -179,6 +179,9 @@ ord$evals / sum(ord$evals)
 # cumulative proportion
 cumsum(ord$evals / sum(ord$evals))
 
+# save ordination output
+# saveRDS(ord, "images/04_ord.rds")
+
 # 3.2 Clustering===========================================
 #**********************************************************
 
@@ -214,56 +217,43 @@ fviz_nbclust(scores(ord, display = "species", choices = 1:2), hcut,
 set.seed(13012019)
 classes = kmeans(scores(ord, display = "species", choices = 1:2), 4)
 table(classes$cluster)
-# classes = pam(vegdist(mat, "bray"), 4)
-# computing the indicator values
-# a seed is also needed here, since results may vary slightly from run to run
-set.seed(270420182)
-ind = labdsv::indval(mat, classes$cluster, numitr = 1000)
-# save ordination/classification output
-# saveRDS(ord, "images/04_ord.rds")
-# saveRDS(classes, "images/04_classes.rds")
-# saveRDS(ind, "images/04_ind.rds")
 
-# load classification output
-ind = readRDS("images/04_ind.rds")
+# save classification output
+saveRDS(classes, "images/04_classes.rds")
+
+#**********************************************************
+# 4 Visualization - DCA biplot-----------------------------
+#**********************************************************
+
+# attach ordination/classification output
 ord = readRDS("images/04_ord.rds")
 classes = readRDS("images/04_classes.rds")
+
+# indicator analysis no longer meaninful since the DCA axes are assigned a class
+# and not the words. Instead, we simply use the most frequent, and thus most
+# important, words as label in the plot. This is much simpler, easier to
+# understand, and produces almost the same results.
+
 out = data.frame(
-  # the indicator values for each class for each word
-  ind$indval,
-  # significance value for a word
-  "pval" = ind$pval,
-  "words" = names(ind$pval),
-  # assign the most likeliest class, i.e. the class with the
-  # highest indicator value
-  class = ind$maxcls,
+  "words" = names(classes$cluster),  # should be the same as names(mat)
+  # count the number of words assuming that the most frequent words are also the
+  # most important
+  n = colSums(mat),
+  # cluster class
+  class = classes$cluster,
   # scores
   "scores_1" = vegan::scores(ord, display = "species")[, 1],
-  "scores_2" = vegan::scores(ord, display = "species")[, 2],
-  "scores_3" = vegan::scores(ord, display = "species")[, 3])
+  "scores_2" = vegan::scores(ord, display = "species")[, 2])
 
-# just keep the most important indicator value (this is also the one which
-# decided to which class the word belongs)
-out$ind_val = apply(out[, c("X1", "X2", "X3", "X4")], 1, max)
-# just keep pvals < 0.005
-# out = filter(out, pval <= 0.05) %>%
-#   dplyr::select(-one_of(c("X1", "X2", "X3")))
-
-# group by class
 out_2 = group_by(out, class) %>%
-  # order the indicator value descendingly and the p-value ascendingly
-  arrange(desc(ind_val), pval) %>%
-  # use the n most significant words of each group
-  slice(1:15) %>%
+  arrange(desc(n)) %>%
+  slice(1:20) %>%
   as.data.frame
 
-# plot(x = out_2$scores_1, y = out_2$scores_2, type = "n")
-# text(x = out_2$scores_1, y = out_2$scores_2, labels = out_2$words, col = out_2$class)
+# define color palette
 pal = RColorBrewer::brewer.pal("Set3", n =  6)[3:6]
-# each time you run labdsv::indval cluster order changes, so in one run class 1
-# is urban/infrastructure and in the next run class 1 is ppgis, hence, you have
-# to create also anew 08_class_mapping (you would have to do it in any case, but
-# just to remember)!!!
+# DCA biplot with most frequent words as labels, labels are colored in
+# accordance with their class
 p_1 = ggplot(out_2) +
   ggrepel::geom_label_repel(aes(out_2$scores_1,
                                 out_2$scores_2,
