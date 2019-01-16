@@ -25,7 +25,11 @@ library("stringr")
 library("tm")
 library("wordcloud")
 library("ggplot2")
-library("vegan")
+# see
+# browseURL("https://github.com/vegandevs/vegan/issues/303")
+# use >= vegan5.4-4
+# devtools::install_github("vegandevs/vegan")
+library("vegan")  
 library("labdsv")
 library("tidyverse")
 library("magrittr")
@@ -164,7 +168,6 @@ mat = readRDS("images/04_mat.rds")
 # downweighting of rare species
 # ord = decorana(decostand(mat, "pa"), iweigh = 1)
 ord = decorana(mat, iweigh = 1)
-
 # yields a better result but does not give a score for each word
 # ord = decorana(vegdist(decostand(mat, "pa"), "bray"), iweigh = 1)
 # last line corresponds to axis lengths
@@ -198,6 +201,12 @@ cumsum(ord$evals / sum(ord$evals))
 # table(classes)
 # # computing indicator values
 # ind = labdsv::indval(mat, classes, numitr = 1000)
+
+
+# Elbow method
+fviz_nbclust(as.matrix(vegdist(mat, "bray")), kmeans, method = "wss", k.max = 15) +
+  geom_vline(xintercept = 4, linetype = 2) +
+  labs(subtitle = "Elbow method")
 
 # kmeans clustering (output cluster classes are arbitrarily assigned since
 # kmeans starts with k randomly chosen centroids; hence when rerunning the
@@ -238,8 +247,8 @@ out = data.frame(
 # decided to which class the word belongs)
 out$ind_val = apply(out[, c("X1", "X2", "X3", "X4")], 1, max)
 # just keep pvals < 0.005
-out = filter(out, pval <= 0.05) %>%
-  dplyr::select(-one_of(c("X1", "X2", "X3", "X4")))
+# out = filter(out, pval <= 0.05) %>%
+#   dplyr::select(-one_of(c("X1", "X2", "X3")))
 
 # group by class
 out_2 = group_by(out, class) %>%
@@ -249,8 +258,8 @@ out_2 = group_by(out, class) %>%
   slice(1:15) %>%
   as.data.frame
 
-# plot(x = out_2$DCA1, y = out_2$DCA2, type = "n")
-# text(x = out_2$DCA1, y = out_2$DCA2, labels = out_2$words, col = out_2$class)
+# plot(x = out_2$scores_1, y = out_2$scores_2, type = "n")
+# text(x = out_2$scores_1, y = out_2$scores_2, labels = out_2$words, col = out_2$class)
 pal = RColorBrewer::brewer.pal("Set3", n =  6)[3:6]
 # each time you run labdsv::indval cluster order changes, so in one run class 1
 # is urban/infrastructure and in the next run class 1 is ppgis, hence, you have
@@ -273,6 +282,7 @@ p_1 = ggplot(out_2) +
   scale_fill_manual(values = pal,
                     labels = c("EL cluster", "MT cluster",
                                "PC cluster", "UI cluster"))
+p_1
 ggsave("figures/04_dca.png", p_1, dpi = 300, width = 18, height = 15,
        units = "cm")
 save(p_1, "images/04_p_1.rda")
@@ -402,7 +412,7 @@ mds = metaMDS(pa, noshare = FALSE, autotransform = FALSE, try = 50,
 
 
 # PAM clustering===========================================
-#**********************************************************
+#************************************** ********************
 library("cluster")
 # Bray-Dissimilarity
 x = vegdist(pa, "bray")
@@ -431,23 +441,51 @@ kmeans.fun <- function (data, maxclusts = 15) {
        main = paste(deparse(substitute(data))))
 }
 
-kmeans.fun(decostand(mat, "pa"), "bray")
-kmeans.fun(vegdist(pa, "bray"))  # ok, looks like 4-6 clusters
-kmeans.fun(mat)  # > 10
-kmeans.fun(pa)  # > 10
-kmeans.fun(vegdist(mat, "bray"))  # 4-6 classes
 classes = kmeans(vegdist(mat, "bray"), 4)
-ind = labdsv::indval(mat, classes$cluster, numitr = 1000)
-out = data.frame(
-  # the indicator values for each class for each word
-  round(ind$indval, d = 2),
-  # significance value for a word
-  "pval" = ind$pval,
-  "words" = names(ind$pval),
-  # assign the most likeliest class, i.e. the class with the
-  # highest indicator value
-  class = ind$maxcls,
-  # DCA scores
-  vegan::scores(ord, display = c("species")))
+kmeans.fun(vegdist(mat, "bray"))
+
+library(factoextra)
+library(NbClust)
+tmp <- get_clust_tendency(mat, n = nrow(mat) - 1,
+                          graph = TRUE)
+1 - tmp$hopkins_stat  # To get the Stat
+
+# Elbow method
+fviz_nbclust(as.matrix(vegdist(mat, "bray")), kmeans, method = "wss", k.max = 15) +
+  geom_vline(xintercept = 4, linetype = 2) +
+  labs(subtitle = "Elbow method")
+
+# Silhouette method
+fviz_nbclust(as.matrix(vegdist(mat, "bray")), kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+
+# Gap statistic
+# nboot = 50 to keep the function speedy. 
+# recommended value: nboot= 500 for your analysis.
+# Use verbose = FALSE to hide computing progression.
+set.seed(123)
+fviz_nbclust(as.matrix(vegdist(mat, "bray")), kmeans, nstart = 25, 
+             method = "gap_stat", nboot = 50) +
+  labs(subtitle = "Gap statistic method")
+
+browseURL("https://www.datanovia.com/en/lessons/determining-the-optimal-number-of-clusters-3-must-know-methods/")
+browseURL("https://lukedaniels1.github.io/Bio381_2018/Daniels_Cluster_Analysis_Lecture.html")
+# let's use the DCA scores
+tmp = get_clust_tendency(scores(ord, display = "species"),
+                         n = nrow(mat) - 1, graph = TRUE)
+1 - tmp$hopkins_stat  # To get the Stat
+# Hopkins stat > 0.5
+
+fviz_nbclust(scores(ord, display = "species", choices = 1:2),
+             kmeans, method = "wss")  # using 3 DCA axes, probably 4 classes
+# Silhouette method
+fviz_nbclust(scores(ord, display = "species", choices = 1:3), kmeans, method = "silhouette") +
+  labs(subtitle = "Silhouette method")  # 4 classes
+# Gap statistic
+fviz_nbclust(scores(ord, display = "species", choices = 1:3), kmeans,
+             nstart = 25, method = "gap_stat", nboot = 50) +
+  labs(subtitle = "Gap statistic method")  # 3 classes for 2, 3 and 4 axes
+
+
 
 
