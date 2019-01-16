@@ -20,16 +20,12 @@
 
 # attach packages
 library("data.table")
-library("dplyr")
-library("stringr")
 library("tm")
-library("ggplot2")
 # see
 # browseURL("https://github.com/vegandevs/vegan/issues/303")
 # use >= vegan5.4-4
 # devtools::install_github("vegandevs/vegan")
 library("vegan")  
-library("labdsv")
 library("tidyverse")
 library("magrittr")
 
@@ -154,6 +150,8 @@ mat = mat[, sort(names(mat))]
 # 3 ORDINATION & CLUSTERING--------------------------------
 #**********************************************************
 
+# 3.1 DCA==================================================
+#**********************************************************
 # load the input data
 mat = readRDS("images/04_mat.rds")
 # presence-absence matrix
@@ -180,39 +178,41 @@ ord
 ord$evals / sum(ord$evals)
 # cumulative proportion
 cumsum(ord$evals / sum(ord$evals))
-# proportion of variance as used in other software (PC-Ord), see ?decorana
-# ord$evals.decorana / sum(ord$evals.decorana)
-#cumulative proportion as used in other software (PC-Ord)
-# cumsum(ord$evals.decorana / sum(ord$evals.decorana))
 
+# 3.2 Clustering===========================================
+#**********************************************************
 
-# ward's clustering also outputs meaningful results with Bray-Curtis distance
-# again using a frequency matrix (not p/a)
-# dis = vegdist(decostand(mat, "pa"), "bray")
-# clus = cluster::agnes(dis, method = "ward")
-# plot(1:20, sort(clus$height, decreasing = TRUE)[1:20])
+# 3.2.1 Optimal number of classes using wss################
+#**********************************************************
 
-# # Ward's clustering (euclidean distance)
-# clus = cluster::agnes(decostand(mat, "pa"), method = "ward")
-# # hclust(, method = "ward.D2") is doing exactly the same, see ?hclust
-# plot(1:20, sort(clus$height, decreasing = TRUE)[1:20])
-# classes = stats::cutree(clus, k = 4)
-# table(classes)
-# # computing indicator values
-# ind = labdsv::indval(mat, classes, numitr = 1000)
+# Determine optimal number of classes using within sum-of-squares
+library("factoextra")
+library("NbClust")
 
-
-# Elbow method
-fviz_nbclust(as.matrix(vegdist(mat, "bray")), kmeans, method = "wss", k.max = 15) +
+# Elbow method - kmeans
+fviz_nbclust(scores(ord, display = "species", choices = 1:2), kmeans,
+             method = "wss", k.max = 15) +
   geom_vline(xintercept = 4, linetype = 2) +
   labs(subtitle = "Elbow method")
 
+# similar result when using pam
+fviz_nbclust(scores(ord, display = "species", choices = 1:2), pam, 
+             method = "wss", k.max = 15)
+
+# similar results when using Ward's clustering 
+# hcut uses as default hc_method = "ward.D2"
+fviz_nbclust(scores(ord, display = "species", choices = 1:2), hcut,  
+             method = "wss", k.max = 15)  
+
+# 3.2.2 kmeans clustering##################################
+#**********************************************************
 # kmeans clustering (output cluster classes are arbitrarily assigned since
 # kmeans starts with k randomly chosen centroids; hence when rerunning the
 # clustering class 1 might become class 3)
-# To make results reproducible, set a seed
-set.seed(27042018)
-classes = kmeans(vegdist(mat, "bray"), 4)
+
+# To make cluster results reproducible, set a seed
+set.seed(13012019)
+classes = kmeans(scores(ord, display = "species", choices = 1:2), 4)
 table(classes$cluster)
 # classes = pam(vegdist(mat, "bray"), 4)
 # computing the indicator values
@@ -367,83 +367,5 @@ library("R2wd")
 wdGet()
 R2wd::wdTable(format(tab),
               caption = "Countries using open-source GIS.")
-
-
-# PAM clustering===========================================
-#************************************** ********************
-library("cluster")
-# Bray-Dissimilarity
-x = vegdist(pa, "bray")
-asw = numeric(5)
-## Note that "k=1" won?t work!
-for (k in 2:5) {
-  asw[k] = pam(pa, k)$silinfo$avg.width
-}
-k.best = which.max(asw)
-cat("silhouette-optimal number of clusters:", k.best, "\n")
-plot(1:5, asw, type = "h", main = "pam() clustering assessment",
-     xlab = "k (# clusters)", ylab = "average silhouette width")
-axis(1, k.best, paste("best", k.best, sep = "\n"), col = "red",
-     col.axis = "red")
-
-# KMEANS===================================================
-#**********************************************************
-kmeans.fun <- function (data, maxclusts = 15) {
-  t <- kmeans(data, 1, nstart = 20)$totss
-  w <- lapply(as.list(2:maxclusts), function(nc)
-    kmeans(data,nc)$tot.withinss)
-
-  plot(1:maxclusts, c(t,w), type = "b",
-       xlab = "Number of Clusters",
-       ylab = "Within groups sum of squares",
-       main = paste(deparse(substitute(data))))
-}
-
-classes = kmeans(vegdist(mat, "bray"), 4)
-kmeans.fun(vegdist(mat, "bray"))
-
-library(factoextra)
-library(NbClust)
-tmp <- get_clust_tendency(mat, n = nrow(mat) - 1,
-                          graph = TRUE)
-1 - tmp$hopkins_stat  # To get the Stat
-
-# Elbow method
-fviz_nbclust(as.matrix(vegdist(mat, "bray")), kmeans, method = "wss", k.max = 15) +
-  geom_vline(xintercept = 4, linetype = 2) +
-  labs(subtitle = "Elbow method")
-
-# Silhouette method
-fviz_nbclust(as.matrix(vegdist(mat, "bray")), kmeans, method = "silhouette")+
-  labs(subtitle = "Silhouette method")
-
-# Gap statistic
-# nboot = 50 to keep the function speedy. 
-# recommended value: nboot= 500 for your analysis.
-# Use verbose = FALSE to hide computing progression.
-set.seed(123)
-fviz_nbclust(as.matrix(vegdist(mat, "bray")), kmeans, nstart = 25, 
-             method = "gap_stat", nboot = 50) +
-  labs(subtitle = "Gap statistic method")
-
-browseURL("https://www.datanovia.com/en/lessons/determining-the-optimal-number-of-clusters-3-must-know-methods/")
-browseURL("https://lukedaniels1.github.io/Bio381_2018/Daniels_Cluster_Analysis_Lecture.html")
-# let's use the DCA scores
-tmp = get_clust_tendency(scores(ord, display = "species"),
-                         n = nrow(mat) - 1, graph = TRUE)
-1 - tmp$hopkins_stat  # To get the Stat
-# Hopkins stat > 0.5
-
-fviz_nbclust(scores(ord, display = "species", choices = 1:2),
-             kmeans, method = "wss")  # using 3 DCA axes, probably 4 classes
-# Silhouette method
-fviz_nbclust(scores(ord, display = "species", choices = 1:3), kmeans, method = "silhouette") +
-  labs(subtitle = "Silhouette method")  # 4 classes
-# Gap statistic
-fviz_nbclust(scores(ord, display = "species", choices = 1:3), kmeans,
-             nstart = 25, method = "gap_stat", nboot = 50) +
-  labs(subtitle = "Gap statistic method")  # 3 classes for 2, 3 and 4 axes
-
-
 
 
