@@ -23,7 +23,6 @@ library("data.table")
 library("dplyr")
 library("stringr")
 library("tm")
-library("wordcloud")
 library("ggplot2")
 # see
 # browseURL("https://github.com/vegandevs/vegan/issues/303")
@@ -318,21 +317,6 @@ table(text_2) %>%
   sort
 
 
-#**********************************************************
-# WORDCLOUD------------------------------------------------
-#**********************************************************
-
-test <- do.call(c, test)
-tab <- table(test) %>%
-  sort %>%
-  rev
-# just consider the most important words
-test <- test[test %in% names(tab[tab > 50])]
-# sample
-test <- test[sample(1:length(test), 15000)]
-# plot a wordcloud
-wordcloud(test, scale = c(5, 0.5), max.words = 100, random.order = FALSE,
-          rot.per = 0.35, use.r.layout = FALSE, colors = brewer.pal(8, "Dark2"))
 
 #**********************************************************
 # OPEN-SOURCE GIS USAGE------------------------------------
