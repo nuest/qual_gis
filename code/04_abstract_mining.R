@@ -369,32 +369,6 @@ R2wd::wdTable(format(tab),
               caption = "Countries using open-source GIS.")
 
 
-#**********************************************************
-# TESTING ISOMAP, NMDS, PAM, KMEANS------------------------
-#**********************************************************
-
-# ISOMAP
-source(file.path("D:/uni/science/projects/ecology/asia/Mongolia/",
-                 "TINN-R/functions/bestisomap.r"))
-#Isomap
-pa = decostand(mat, "pa")
-# tmp = as.data.frame(pa)
-bestiso = bestisomap(vegdist(pa, "bray"), k = 2)
-# explained variance first two axes = 22.91 % (k = 406)
-bestiso = bestisomap(vegdist(mat, "bray"), k = 2)
-# explained variance first two axes = 22.1 % (k = 342)
-
-# NMDS
-
-# default values (not the best solution for heterogeneous datasets)
-mds = metaMDS(pa)
-# no convergence
-mds = metaMDS(pa, noshare = FALSE, autotransform = FALSE, try = 50,
-              weakties = TRUE)
-# no convergence, stress 0.33 (really bad...)
-# using mat, stress 0.33...
-
-
 # PAM clustering===========================================
 #************************************** ********************
 library("cluster")
