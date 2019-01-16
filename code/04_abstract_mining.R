@@ -272,9 +272,15 @@ p_1 = ggplot(out_2) +
                     labels = c("EL cluster", "MT cluster",
                                "PC cluster", "UI cluster"))
 p_1
-ggsave("figures/04_dca.png", p_1, dpi = 300, width = 18, height = 15,
-       units = "cm")
-save(p_1, "images/04_p_1.rda")
+
+# Overthink cluster naming!!!!
+# final thing left to do: combine environ and environment, or explain that
+# environ refers not to the ecological environment but to urban/social
+# environment and alike!!
+
+# ggsave("figures/04_dca.png", p_1, dpi = 300, width = 18, height = 15,
+#        units = "cm")
+# save(p_1, "images/04_p_1.rda")
 
 # rownames correspond to id_citavi
 clus = data.frame(cluster = classes$cluster)
