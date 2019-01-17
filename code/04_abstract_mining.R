@@ -305,8 +305,6 @@ clus = tibble::rownames_to_column(clus, var = "word") %>%
 # construct the majority vote
 library("parallel")
 out = mclapply(seq_len(nrow(mat)), mc.cores = 6, FUN = function(i) {
-out = lapply(seq_len(nrow(mat)), FUN = function(i) {
-  print(i)
   obs = mat[i, names(mat)[mat[i, ] > 0]]
   # reshape so that each word and its count value represent two columns
   obs = melt(obs)
