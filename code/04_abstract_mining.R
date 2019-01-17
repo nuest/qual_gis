@@ -153,7 +153,7 @@ grep("environmentalchang", abs)  # 363
 # in the original abstract, it says 'environmental-change',
 # 'human-environmental', not much we can do about that 
 
-# save your result and remember that rownames(mat) correspond to abs_df$idCitavi 
+# save your result and remember that rownames(mat) correspond to abs_df$id_citavi 
 # saveRDS(mat, file = "images/04_mat.rds")
 
 #**********************************************************
@@ -279,8 +279,12 @@ p_1 = ggplot(out_2) +
   # check labels in case you classify anew since categories are assigned
   # randomly meaning that "EL cluster" could be 2 next time instead of 1
   scale_fill_manual(values = pal,
-                    labels = c("EL cluster", "MT cluster",
-                               "PC cluster", "UI cluster"))
+                    labels = c("TR cluster", "CU cluster",
+                               "EL cluster", "PC cluster"))
+# PC = Participatory Community cluster
+# EL = Ecology and Landscape cluster
+# TR = Theoretical Review cluster
+# CU = Children Urban cluster 
 p_1
 
 # Overthink cluster naming!!!!
@@ -301,3 +305,47 @@ clus = tibble::rownames_to_column(clus, var = "id_citavi") %>%
          cluster = as.factor(cluster))
 levels(clus$cluster) = c(c("EL", "MT", "PC", "UI"))
 saveRDS(clus, "images/04_classes_df.rds")
+
+# indval
+# 1. clustering sites (rows = sites, cols = species)
+# 2. indval: what are the most important species of a cluster
+
+# ok, we will have a majority vote, i.e., we will assign a paper the class that
+# was most often assigned to its abstract words
+
+clus = tibble::rownames_to_column(clus, var = "word") %>%
+  mutate(cluster = as.factor(cluster))
+abs[1] %in% names(mat)
+
+
+out = mclapply(seq_len(nrow(mat)), mc.cores = 6, FUN = function(i) {
+  obs = mat[i, names(mat)[mat[i, ] > 0]]
+  # reshape so that each word and its count value represent two columns
+  obs = melt(obs)
+  # extract the cluster class for the words appearing in the abstract
+  filter(clus, word %in% obs$variable) %>%
+    # add the cluster class column
+    cbind(select(obs, value), .) %>%
+    # aggregate the word counts by cluster
+    group_by(cluster) %>%
+    summarize(n = sum(value)) %>%
+    arrange(desc(n))
+  })
+
+ind = sapply(out, function(x) {
+  identical(x$n[1], x$n[2])
+})
+sum(ind)  # in 7 cases the first and the second place is shared
+out[ind]  # well, then we will favor the lower-number classes
+
+# extract the winning class
+class_pap = unlist(lapply(out, function(x) x[1, ] %>% pull(cluster)))
+table(class_pap)
+clus = data.frame(id_citavi = as.integer(rownames(mat)),
+                  cluster = class_pap)
+levels(clus$cluster) = c("TR", "CU", "EL", "PC")
+
+# check
+head(clus)
+abs[1]
+classes$cluster[names(classes$cluster) == "green"]
