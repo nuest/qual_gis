@@ -10,9 +10,9 @@
 #**********************************************************
 #
 # 1. ATTACH PACKAGES AND DATA
-# 2. EXPLORATION
+# 2. ABSTRACT MINING
 # 3. ORDINATION & CLUSTERING
-# 4. CLUSTER CENTROIDS
+# 4. VISUALIZATION - KMEANS/DCA BIPLOT
 #
 #**********************************************************
 # 1 ATTACH PACKAGES AND DATA-------------------------------
@@ -39,7 +39,7 @@ tc = readRDS("images/00_tc.rds")
 trans_soft_qd = readRDS("images/03_trans_soft_qd.rds")
 
 #**********************************************************
-# 2 EXPLORATION--------------------------------------------
+# 2 ABSTRACT MINING----------------------------------------
 #**********************************************************
 
 # add citavi ID
@@ -232,10 +232,13 @@ table(classes$cluster)
 # saveRDS(classes, "images/04_classes.rds")
 
 #**********************************************************
-# 4 Visualization - DCA-custer biplot----------------------
+# 4 Visualization - DCA-cluster biplot---------------------
 #**********************************************************
 
+# 4.1 Visualization========================================
+#**********************************************************
 # attach ordination/classification output
+mat = readRDS("images/04_mat.rds")
 ord = readRDS("images/04_ord.rds")
 classes = readRDS("images/04_classes.rds")
 
@@ -286,39 +289,24 @@ p_1 = ggplot(out_2) +
 # TR = Theoretical Review cluster
 # CU = Children Urban cluster 
 p_1
-
-# Overthink cluster naming!!!!
-# final thing left to do: combine environ and environment, or explain that
-# environ refers not to the ecological environment but to urban/social
-# environment and alike!!
-
 # ggsave("figures/04_dca.png", p_1, dpi = 300, width = 18, height = 15,
 #        units = "cm")
 # save(p_1, "images/04_p_1.rda")
 
-# rownames correspond to id_citavi
+# 4.2 Named cluster table (majority vote)==================
+#**********************************************************
+# rownames correspond to words
 clus = data.frame(cluster = classes$cluster)
-# check
-# identical(tibble::rownames_to_column(clus)$rowname, rownames(clus))
-clus = tibble::rownames_to_column(clus, var = "id_citavi") %>%
-  mutate(id_citavi = as.integer(id_citavi),
-         cluster = as.factor(cluster))
-levels(clus$cluster) = c(c("EL", "MT", "PC", "UI"))
-saveRDS(clus, "images/04_classes_df.rds")
-
-# indval
-# 1. clustering sites (rows = sites, cols = species)
-# 2. indval: what are the most important species of a cluster
-
 # ok, we will have a majority vote, i.e., we will assign a paper the class that
 # was most often assigned to its abstract words
-
 clus = tibble::rownames_to_column(clus, var = "word") %>%
   mutate(cluster = as.factor(cluster))
-abs[1] %in% names(mat)
 
-
+# construct the majority vote
+library("parallel")
 out = mclapply(seq_len(nrow(mat)), mc.cores = 6, FUN = function(i) {
+out = lapply(seq_len(nrow(mat)), FUN = function(i) {
+  print(i)
   obs = mat[i, names(mat)[mat[i, ] > 0]]
   # reshape so that each word and its count value represent two columns
   obs = melt(obs)
@@ -332,6 +320,7 @@ out = mclapply(seq_len(nrow(mat)), mc.cores = 6, FUN = function(i) {
     arrange(desc(n))
   })
 
+# check the cases where two classes have the same number of words
 ind = sapply(out, function(x) {
   identical(x$n[1], x$n[2])
 })
@@ -347,5 +336,10 @@ levels(clus$cluster) = c("TR", "CU", "EL", "PC")
 
 # check
 head(clus)
-abs[1]
-classes$cluster[names(classes$cluster) == "green"]
+table(clus$cluster)
+classes$cluster[names(classes$cluster) %in%
+                  c("green", "valu", "environment", "landscap")]
+classes$cluster[names(classes$cluster) %in%
+                  c("public", "stakehold", "ppgis", "particip")]
+# save cluster majority vote
+saveRDS(clus, "images/04_classes_df.rds")
