@@ -184,39 +184,3 @@ ft
 doc = read_docx(path = "~/Desktop/test.docx")
 doc = body_add_flextable(doc, value = ft)
 print(doc, target = "~/Desktop/test2.docx")
-
-# 3.2 Lattice version======================================
-#**********************************************************
-library("lattice")
-library("latticeExtra")
-
-out_2 = out
-del = filter(out_2, cat == "dc" & 
-               !feature %in% c("Mapping\nWorkshop", "Survey", "Narration") & 
-               !is.na(feature)) %>%
-  pull(feature) %>%
-  unique
-out_2 = filter(out_2, !feature %in% del)
-out_2[is.na(out_2$feature), "feature"] = "(Missing)"
-out_2$feature = gsub("Mapping\nWorkshop", "MapWS", out_2$feature)
-out_2$feature = gsub("No GIS", "(Missing)", out_2$feature)
-out_2$feature = gsub("Transfor-\nmations", "Transformations", out_2$feature)
-out_2 = ungroup(out_2) %>% 
-  tidyr::complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
-
-b_1 = barchart(feature ~ percent | cat + cluster, 
-               data = as.data.frame(out_2),
-               groups = cat, 
-               stack = TRUE,
-               # auto.key = list(title = "Group variable", columns = 3),
-               scales = list(y = list(relation = "free"),
-                             x = list(rot = 45, cex = 0.5)))
-
-useOuterStrips(
-  b_1, 
-  strip = strip.custom(bg = c("white"),
-                       par.strip.text = list(cex = 0.8)),
-  strip.left = strip.custom(bg = "white", 
-                            par.strip.text = list(cex = 0.8))
-)
-
