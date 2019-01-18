@@ -1,3 +1,19 @@
+#' @title Compute percentage by group
+#' @details `compute_percentage` computes the percentage of nested groups.
+#' @param ... Name of grouping variables, should be given using NSE.
+compute_percentage = function(df, ...) {
+  group_var = quos(...)
+  df %>%
+    group_by(!!!group_var) %>%
+    summarize(n = n()) %>%
+    mutate(total = sum(n),
+           percent = round(n / total * 100, 2)) %>%
+    select(!!!group_var, percent) %>%
+    ungroup %>%
+    tidyr::complete(!!!group_var, fill = list(percent = 0))
+}
+
+
 #' @title Save barplots to a specific location
 #' @details `save_barplot` creates a barplot for each cluster group and saves
 #'   the resulting figures to a specific location.
