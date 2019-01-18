@@ -20,11 +20,14 @@
 library("dplyr")
 library("vegan")
 
+# source your own functions
+source("code/helper_funs.R")
+
 # attach data
 abs_df = readRDS("images/00_abs_df.rds")
 tc = readRDS("images/00_tc.rds")
 wos = readRDS("images/00_wos.rds")
-trans_soft_qd = readRDS("images/03_trans_soft_qd.rds")
+dc = readRDS("images/03_trans_soft_qd.rds")
 ord = readRDS("images/04_ord.rds")
 clus = readRDS("images/04_classes_df.rds")
 
@@ -104,13 +107,10 @@ clus = group_by(clus, cluster) %>%
 # 3 CREATE TABLE-BARPLOT-----------------------------------
 #**********************************************************
 
-# attach further necessary data
-dc = readRDS("images/03_trans_soft_qd.rds")
+# more or less the exact same code as used in 06_cluster_table.R
 
 # 3.1 Data preparation=====================================
 #**********************************************************
-
-# sum(rownames(clus) == rownames(mat)) == nrow(mat)  # TRUE, perfect
 
 # join GIS & Co.
 setdiff(clus$WOS, dc$w)
@@ -129,21 +129,17 @@ compute_percentage = function(df, ...) {
 }
 
 gis = compute_percentage(clus_molt, cluster, GIS)
-
-# gis = reshape2::dcast(gis, formula = cluster ~ GIS, value.var = "percent")
 gis = dplyr::rename(gis, feature = GIS) %>%
   mutate(cat = "GIS")
 gis[gis$feature == "No GIS", "feature"] = NA
 
-transf = compute_percentage(clus_molt, cluster, t)
-# transf = reshape2::dcast(transf, formula = cluster ~ t, value.var = "percent")
 # gp = geoprocessing
+transf = compute_percentage(clus_molt, cluster, t)
 transf = dplyr::rename(transf, feature = t) %>%
   mutate(cat = "gp")
 
-qdata = compute_percentage(clus_molt, cluster, qdata)
-# qdata = reshape2::dcast(qdata, formula = cluster ~ qdata, value.var = "percent")
 # dc = data collection
+qdata = compute_percentage(clus_molt, cluster, qdata)
 qdata = dplyr::rename(qdata, feature = "qdata") %>%
   mutate(cat = "dc")
 
@@ -152,8 +148,6 @@ out = rbind(gis, transf, qdata)
 
 # 3.2 Barplots=============================================
 #**********************************************************
-# source your own barplot function
-source("code/helper_funs.R")
 
 # create gis barplots
 d = filter(out, cat == "GIS")
