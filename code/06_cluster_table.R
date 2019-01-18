@@ -19,6 +19,8 @@
 
 # attach packages
 library("dplyr")
+# source your own helper functions
+source("code/helper_funs.R")
 
 # attach data
 qual = readRDS("images/00_qual.rds")
@@ -55,37 +57,19 @@ clus = inner_join(clus, dplyr::select(tc, -year), by = "WOS")
 # join GIS & Co.
 setdiff(clus$WOS, dc$w)
 clus_molt = inner_join(clus, select(dc, -year), by = c("WOS" = "w"))
-tmp = group_by(clus_molt, cluster, GIS) %>%
-  summarize(n = n()) %>%
-  mutate(total = sum(n),
-         percent = round(n / total * 100)) %>%
-  dplyr::select(cluster, GIS, percent) %>%
-  reshape2::dcast(formula = cluster ~ GIS, value = percent)
 
-compute_percentage = function(df = clus_molt, group = "cluster", cat) {
-  group_by_(df, group, cat) %>%
-    summarize(n = n()) %>%
-    mutate(total = sum(n),
-           percent = round(n / total * 100, 2)) %>%
-    select_(group, cat, "percent")
-}
-
-gis = compute_percentage(cat = "GIS")
-# gis = reshape2::dcast(gis, formula = cluster ~ GIS, value.var = "percent")
+# compute percentages by groups
+gis = compute_percentage(clus_molt, cluster, GIS)
 gis = dplyr::rename(gis, feature = GIS) %>%
   mutate(cat = "GIS")
-transf = compute_percentage(cat = "t")
-# transf = reshape2::dcast(transf, formula = cluster ~ t, value.var = "percent")
+transf = compute_percentage(clus_molt, cluster, t)
 # gp = geoprocessing
 transf = dplyr::rename(transf, feature = t) %>%
   mutate(cat = "gp")
-
-qdata = compute_percentage(cat = "qdata")
-# qdata = reshape2::dcast(qdata, formula = cluster ~ qdata, value.var = "percent")
+qdata = compute_percentage(clus_molt, cluster, qdata)
 # dc = data collection
 qdata = dplyr::rename(qdata, feature = "qdata") %>%
   mutate(cat = "dc")
-
 # construct output table
 out = rbind(gis, transf, qdata)
 
@@ -98,17 +82,15 @@ out = rbind(gis, transf, qdata)
 # attach further necessary packages
 library("flextable")
 library("officer")
-# source your own barplot function
-source("code/helper_funs.R")
 
 # 3.1.1 Barplots###########################################
 #**********************************************************
 # create gis barplots
 d = filter(out, cat == "GIS")
 d[d$feature == "No GIS", "feature"] = NA
-d = mutate(d, 
-           feature = as.factor(feature),
-           feature = forcats::fct_explicit_na(feature))
+d = d %>% mutate(feature = forcats::fct_explicit_na(feature),
+                 feature = fct_drop(feature))
+levels(d$feature) = c("free GIS", "(Missing)", "ArcGIS")
 save_barplot(d, value = "percent", bar_name = "feature", 
              dir_name = "figures/bars/bar_gis_")
 
@@ -126,15 +108,8 @@ filter(out, cat == "dc") %>%
 # filter the two most important dc methods of each cluster
 d = filter(out, cat == "dc" & feature %in% 
              c("Mapping\nWorkshop", "Survey", NA, "Narration")) %>%
-  mutate(feature = gsub("\\n", " ", feature))
-# ok, Narration is not available for cluster 1...
-# so, add it
-d = ungroup(d) %>%
-  mutate(feature = as.factor(feature)) %>%
-  mutate(feature = forcats::fct_explicit_na(feature)) %>%
-  # add Narration to cluster 1
-  tidyr::complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
-
+  mutate(feature = gsub("\\n", " ", feature),
+         feature = forcats::fct_explicit_na(feature))
 # create data collection barplots
 save_barplot(d, value = "percent", bar_name = "feature", 
              dir_name = "figures/bars/bar_dc_")
@@ -149,7 +124,8 @@ tab = group_by(clus, cluster) %>%
   summarize(n = n(),
             # median_year = median(year),
             mean_author = round(mean(no_authors), 2),
-            mean_tc = mean(tc))
+            mean_tc = mean(tc)) %>%
+  arrange(desc(n))
 # have a peak
 tab
 
@@ -159,8 +135,7 @@ tab_2 = tab
 # display only a certain number of digits. Therefore, round the numbers, convert
 # them into a character and back into numerics
 tab_2 = mutate_at(tab_2, .vars = c("mean_author", "mean_tc"),
-          .funs = function(x) as.numeric(as.character(round(x, 1)))
-       )
+                  .funs = function(x) as.numeric(as.character(round(x, 1))))
 # add three columns which should hold the barplots
 tab_2[, c("gis", "geopro", "dc")] = NA
 ft = flextable(tab_2) 
@@ -168,7 +143,9 @@ ft = flextable(tab_2)
 ft = set_header_labels(ft,
                        gis = "Used GIS (%)", 
                        geopro = "Applied geoprocessing (%)",
-                       dc = "Data collection\nmethod (%)")
+                       dc = "Data collection\nmethod (%)",
+                       mean_author = "Mean # authors",
+                       mean_tc = "Mean # citations")
 # align
 ft = align(ft, align = "center", part = "header")
 ft = align(ft, align= "left", part = "header", j = c("gis", "geopro", "dc"))
@@ -225,7 +202,7 @@ out_2$feature = gsub("Mapping\nWorkshop", "MapWS", out_2$feature)
 out_2$feature = gsub("No GIS", "(Missing)", out_2$feature)
 out_2$feature = gsub("Transfor-\nmations", "Transformations", out_2$feature)
 out_2 = ungroup(out_2) %>% 
-  complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
+  tidyr::complete(cluster, feature, fill = list(percent = 0, cat = "dc"))
 
 b_1 = barchart(feature ~ percent | cat + cluster, 
                data = as.data.frame(out_2),
