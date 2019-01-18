@@ -10,7 +10,7 @@
 #
 # 1. ATTACH PACKAGES AND DATA
 # 2. TOP20 STUDIES NEAR CLUSTER CENTROIDS
-# 3. ADD DC, GC AND USED GIS
+# 3. TOP20 TABLE-BARPLOT
 #
 #**********************************************************
 # 1 ATTACH PACKAGES AND DATA-------------------------------
@@ -18,6 +18,7 @@
 
 # attach packages
 library("dplyr")
+library("vegan")
 
 # attach data
 abs_df = readRDS("images/00_abs_df.rds")
@@ -34,13 +35,14 @@ clus = readRDS("images/04_classes_df.rds")
 # add id_citavi
 abs_df = inner_join(abs_df, dplyr::select(wos, WOS, id_citavi),
                     by = "WOS")
-
 # add times cited
 abs_df = inner_join(abs_df, dplyr::select(tc, tc, WOS), by = "WOS")
 
 # find cluster centroids (centers) in ordination space
-x = data.frame(scores(ord, display = "sites")[, 1:2], class = clus$cluster)
-plot(x[, 1:2], col = clus$cluster, pch = 16)
+x = data.frame(scores(ord, display = "sites", choices = 1:2),
+               class = clus$cluster)
+
+plot(x[, 1:2], col = x$class, pch = 16)
 cen = group_by(x, class) %>%
   summarize_all(funs(mean))
 points(cen[, c("DCA1", "DCA2")], cex = 3, pch = 16,  col = "yellow")
@@ -78,46 +80,179 @@ points(dplyr::select(x[out[[i]], ], -class), pch = 16, col = "lightblue")
 res = data.frame(x[unlist(out), "class"], as.numeric(unlist(out)),
                  stringsAsFactors = FALSE)
 names(res) = c("class", "id_citavi")
-res = inner_join(dplyr::select(abs_df, -abstract), res, by = "id_citavi")
+# check
+tmp = inner_join(res, 
+                 dplyr::select(wos, title, year, no_authors, WOS, id_citavi),
+                 by = "id_citavi")
+tmp = inner_join(dplyr::select(abs_df, titel, id_citavi), tmp,
+                 by = "id_citavi")
+filter(tmp, titel != title) %>%
+  select(titel, title) # everything's fine, perfect
 
-res = group_by(res, class) %>%
+clus = select(tmp, -titel) %>%
+  rename(cluster = class)
+# add times cited
+setdiff(clus$WOS, tc$WOS)
+clus = inner_join(clus, dplyr::select(tc, -year), by = "WOS")
+
+# table output for Susann
+clus = group_by(clus, cluster) %>%
   # top_n(15, tc) %>%
-  arrange(class, desc(tc))
+  arrange(cluster, desc(tc))
 
 #**********************************************************
-# 3 ADD DC, GP and used GIS--------------------------------
+# 3 CREATE TABLE-BARPLOT-----------------------------------
 #**********************************************************
 
-# add data collection methods, geoprocessing methods, and used GIS
+# attach further necessary data
+dc = readRDS("images/03_trans_soft_qd.rds")
 
-# check if there are studies which use more than 1 GIS
-tmp = group_by(trans_soft_qd, w) %>% 
-  summarize(n = n_distinct(GIS)) %>% 
-  pull(n) != 1
-sum(tmp)  # 0
-# check if there are studies which use more than one transformation method
-tmp = group_by(trans_soft_qd, w) %>% 
-  summarize(n = n_distinct(t)) %>% 
-  pull(n) != 1
-sum(tmp)  # 0
+# 3.1 Data preparation=====================================
+#**********************************************************
 
-trans_soft_qd = group_by(trans_soft_qd, w) %>%
-  # put all qualitative data collection methods into one column
-  mutate(qd = paste(unique(qdata), collapse = ";")) %>%
-  # just keep the first row of each group
-  slice(1) %>%
-  dplyr::select(-qdata)
-dim(trans_soft_qd)  # 380 rows, perfect
+# sum(rownames(clus) == rownames(mat)) == nrow(mat)  # TRUE, perfect
 
-res = left_join(dplyr::select(res, WOS, year, titel, tc, class),
-                dplyr::select(trans_soft_qd, -year), by = c("WOS" = "w"))
-setnames(res, c("WOS", "titel", "GIS", "t", "qd"), 
-         c("wos_id", "title", "used_GIS", "geoprocessing", "collect_meth"))
+# join GIS & Co.
+setdiff(clus$WOS, dc$w)
+clus_molt = inner_join(clus, select(dc, -year), by = c("WOS" = "w"))
 
-# save your output
-# res$geoprocessing = gsub("-\n", "", res$geoprocessing)
-# xlsx::write.xlsx2(as.data.frame(res), 
-#                   file = file.path(tempdir(), "centroids.xlsx"),
-#                   row.names = FALSE)
-# write.csv2(res, file = "C:/Users/pi37pat/Desktop/centroids.csv",
-#            row.names = FALSE)
+compute_percentage = function(df, ...) {
+  group_var = quos(...)
+  df %>%
+    group_by(!!!group_var) %>%
+    summarize(n = n()) %>%
+    mutate(total = sum(n),
+           percent = round(n / total * 100, 2)) %>%
+    select(!!!group_var, percent) %>%
+    ungroup %>%
+    tidyr::complete(!!!group_var, fill = list(percent = 0))
+}
+
+gis = compute_percentage(clus_molt, cluster, GIS)
+
+# gis = reshape2::dcast(gis, formula = cluster ~ GIS, value.var = "percent")
+gis = dplyr::rename(gis, feature = GIS) %>%
+  mutate(cat = "GIS")
+gis[gis$feature == "No GIS", "feature"] = NA
+
+transf = compute_percentage(clus_molt, cluster, t)
+# transf = reshape2::dcast(transf, formula = cluster ~ t, value.var = "percent")
+# gp = geoprocessing
+transf = dplyr::rename(transf, feature = t) %>%
+  mutate(cat = "gp")
+
+qdata = compute_percentage(clus_molt, cluster, qdata)
+# qdata = reshape2::dcast(qdata, formula = cluster ~ qdata, value.var = "percent")
+# dc = data collection
+qdata = dplyr::rename(qdata, feature = "qdata") %>%
+  mutate(cat = "dc")
+
+# construct output table
+out = rbind(gis, transf, qdata)
+
+# 3.2 Barplots=============================================
+#**********************************************************
+# source your own barplot function
+source("code/helper_funs.R")
+
+# create gis barplots
+d = filter(out, cat == "GIS")
+d = d %>% mutate(feature = forcats::fct_explicit_na(feature),
+                 feature = fct_drop(feature))
+levels(d$feature) = c("free GIS", "(Missing)", "ArcGIS")
+save_barplot(d, value = "percent", bar_name = "feature", 
+             dir_name = "figures/bars/bar_gis_core_")
+
+# create geoprocessing barplots
+d = filter(out, cat == "gp") %>%
+  mutate(feature = gsub("-\\n", "", feature),
+         feature = forcats::fct_explicit_na(feature))
+save_barplot(d, value = "percent", bar_name = "feature",
+             dir_name = "figures/bars/bar_geopro_core_")
+
+# create data collection barplots
+# first, find out which are the most widely used dc methods
+filter(out, cat == "dc") %>%
+  group_by(cluster) %>% arrange(cluster, desc(percent)) %>% slice(1:4) 
+# filter the two most important dc methods of each cluster
+d = filter(out, cat == "dc" & feature %in% 
+             c("Mapping\nWorkshop", "Narration", NA, "Interview")) %>%
+  mutate(feature = gsub("\\n", " ", feature),
+         feature = forcats::fct_explicit_na(feature))
+
+# create data collection barplots
+save_barplot(d, value = "percent", bar_name = "feature", 
+             dir_name = "figures/bars/bar_dc_core_")
+
+# 3.3 Flextable============================================
+#**********************************************************
+# attach further necessary packages
+library("flextable")
+library("officer")
+
+# I guess the year is not that important, so delete it
+boxplot(clus$year ~ clus$cluster)
+# summary table (which forms the basis of the subsequent flextable)
+tab = group_by(clus, cluster) %>%
+  summarize(n = n(),
+            # median_year = median(year),
+            mean_author = round(mean(no_authors), 2),
+            mean_tc = mean(tc)) %>%
+  arrange(desc(n))
+# have a peak
+tab
+
+# create the flextable
+tab_2 = tab
+# not sure how to tell a flextable to round, I have only figured out how to
+# display only a certain number of digits. Therefore, round the numbers, convert
+# them into a character and back into numerics
+tab_2 = mutate_at(tab_2, .vars = c("mean_author", "mean_tc"),
+                  .funs = function(x) as.numeric(as.character(round(x, 1))))
+# add three columns which should hold the barplots
+tab_2[, c("gis", "geopro", "dc")] = NA
+ft = flextable(tab_2) 
+# specify how the columns should be named in the output table
+ft = set_header_labels(ft,
+                       gis = "Used GIS (%)", 
+                       geopro = "Applied geoprocessing (%)",
+                       dc = "Data collection\nmethod (%)",
+                       mean_author = "Mean # authors",
+                       mean_tc = "Mean # citations")
+# align
+ft = align(ft, align = "center", part = "header")
+ft = align(ft, align= "left", part = "header", j = c("gis", "geopro", "dc"))
+ft = align(ft, align = "center")
+# make sure that only one digit is shown in the case of numeric columns
+ft = colformat_num(ft, digits = 1, col_keys = c("mean_author", "mean_tc"))
+# add barplots to the flextable
+gis_src = paste0("figures/bars/bar_gis_core_", levels(clus$cluster), ".png")
+ft = display(ft,
+             i = 1:4,
+             col_key = "gis", 
+             pattern = "{{pic}}",
+             formatters = 
+               list(pic ~ as_image("gis", src = gis_src, width = 1.8,
+                                   height = 0.9)))
+
+geopro_src = paste0("figures/bars/bar_geopro_core_", levels(clus$cluster), ".png")
+ft = display(ft,
+             i = 1:4,
+             col_key = "geopro", 
+             pattern = "{{pic}}",
+             formatters = 
+               list(pic ~ as_image("geopro",
+                                   src = geopro_src, width = 1.8,
+                                   height = 0.9)))
+
+dc_src = paste0("figures/bars/bar_dc_core_", levels(clus$cluster), ".png")
+ft = display(ft,
+             i = 1:4,
+             col_key = "dc", 
+             pattern = "{{pic}}",
+             formatters = 
+               list(pic ~ as_image("dc",
+                                   src = dc_src, width = 1.8,
+                                   height = 0.9)))
+# have a look at the output
+ft
