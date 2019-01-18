@@ -103,6 +103,7 @@ clus = group_by(clus, cluster) %>%
   # top_n(15, tc) %>%
   arrange(cluster, desc(tc))
 
+levels(clus$cluster)
 #**********************************************************
 # 3 CREATE TABLE-BARPLOT-----------------------------------
 #**********************************************************
@@ -152,8 +153,9 @@ out = rbind(gis, transf, qdata)
 # create gis barplots
 d = filter(out, cat == "GIS")
 d = d %>% mutate(feature = forcats::fct_explicit_na(feature),
-                 feature = fct_drop(feature))
-levels(d$feature) = c("free GIS", "(Missing)", "ArcGIS")
+                 feature = forcats::fct_drop(feature))
+# reorder 
+d = arrange(d, cluster, feature)
 save_barplot(d, value = "percent", bar_name = "feature", 
              dir_name = "figures/bars/bar_gis_core_")
 
@@ -192,9 +194,16 @@ tab = group_by(clus, cluster) %>%
             # median_year = median(year),
             mean_author = round(mean(no_authors), 2),
             mean_tc = mean(tc)) %>%
-  arrange(desc(n))
+  # doesn't make any sense here, since we have considered 20 pubs per cluster
+  arrange(desc(mean_tc))
 # have a peak
 tab
+# ok, since we have changed the order of tab using desc(n), we have to change
+# accordingly the cluster factor levels
+tab$cluster = factor(tab$cluster, levels = tab$cluster)
+clus$cluster = factor(clus$cluster, levels = tab$cluster)
+# otherwise, we would add our barplots in the previous order of the cluster
+# levels which would be very wrong...
 
 # create the flextable
 tab_2 = tab
@@ -250,3 +259,9 @@ ft = display(ft,
                                    height = 0.9)))
 # have a look at the output
 ft
+# create a docx file using Word (landscape mode)
+doc = read_docx(path = "~/Desktop/test2.docx")
+doc = body_add_flextable(doc, value = ft)
+print(doc, target = "~/Desktop/test2.docx")
+# caption
+#Summarizing the 20 papers that are closest to the cluster center by cluster group.

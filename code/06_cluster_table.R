@@ -89,8 +89,9 @@ library("officer")
 d = filter(out, cat == "GIS")
 d[d$feature == "No GIS", "feature"] = NA
 d = d %>% mutate(feature = forcats::fct_explicit_na(feature),
-                 feature = fct_drop(feature))
-levels(d$feature) = c("free GIS", "(Missing)", "ArcGIS")
+                 feature = forcats::fct_drop(feature))
+# reorder 
+d = arrange(d, cluster, feature)
 save_barplot(d, value = "percent", bar_name = "feature", 
              dir_name = "figures/bars/bar_gis_")
 
@@ -98,6 +99,9 @@ save_barplot(d, value = "percent", bar_name = "feature",
 d = filter(out, cat == "gp") %>%
   mutate(feature = gsub("-\\n", "", feature),
          feature = forcats::fct_explicit_na(feature))
+# reorder factor levels
+d$feature =
+  factor(d$feature, rev(levels(d$feature)))
 save_barplot(d, value = "percent", bar_name = "feature",
              dir_name = "figures/bars/bar_geopro_")
 
@@ -107,7 +111,7 @@ filter(out, cat == "dc") %>%
   group_by(cluster) %>% arrange(cluster, desc(percent)) %>% slice(1:4) 
 # filter the two most important dc methods of each cluster
 d = filter(out, cat == "dc" & feature %in% 
-             c("Mapping\nWorkshop", "Survey", NA, "Narration")) %>%
+             c("Mapping\nWorkshop", "Survey", NA, "Interview")) %>%
   mutate(feature = gsub("\\n", " ", feature),
          feature = forcats::fct_explicit_na(feature))
 # create data collection barplots
@@ -128,6 +132,12 @@ tab = group_by(clus, cluster) %>%
   arrange(desc(n))
 # have a peak
 tab
+# ok, since we have changed the order of tab using desc(n), we have to change
+# accordingly the cluster factor levels
+tab$cluster = factor(tab$cluster, levels = tab$cluster)
+clus$cluster = factor(clus$cluster, levels = tab$cluster)
+# otherwise, we would add our barplots in the previous order of the cluster
+# levels which would be very wrong...
 
 # create the flextable
 tab_2 = tab
@@ -181,6 +191,10 @@ ft = display(ft,
                                    height = 0.9)))
 # have a look at the output
 ft
-doc = read_docx(path = "~/Desktop/test.docx")
+# create a docx file using libreoffice
+doc = read_docx(path = "~/Desktop/table.docx")
 doc = body_add_flextable(doc, value = ft)
 print(doc, target = "~/Desktop/test2.docx")
+
+# caption:
+# Summarizing all reviewed papers by assigned cluster group. Please note that we have only considered the four most frequent data collection methods in column “Data collection method %”.
