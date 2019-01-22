@@ -194,7 +194,7 @@ ft
 # create a docx file using libreoffice
 doc = read_docx(path = "~/Desktop/table.docx")
 doc = body_add_flextable(doc, value = ft)
-print(doc, target = "~/Desktop/test2.docx")
+print(doc, target = "~/Desktop/table_out.docx")
 
 # caption:
 # Summarizing all reviewed papers by assigned cluster group. Please note that we have only considered the four most frequent data collection methods in column “Data collection method %”.

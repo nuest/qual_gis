@@ -102,13 +102,19 @@ clus = inner_join(clus, dplyr::select(tc, -year), by = "WOS")
 clus = group_by(clus, cluster) %>%
   # top_n(15, tc) %>%
   arrange(cluster, desc(tc))
+# levels(clus$cluster)
 
-levels(clus$cluster)
+
+# library("xlsx")
+# write.xlsx(x = as.data.frame(clus), row.names = FALSE, 
+#            file = "core_pubs.xlsx")
+
 #**********************************************************
 # 3 CREATE TABLE-BARPLOT-----------------------------------
 #**********************************************************
 
-# more or less the exact same code as used in 06_cluster_table.R
+# more or less the exact same code as used in 06_cluster_table.R but here only
+# applied to the 20 pubs closest to the cluster center
 
 # 3.1 Data preparation=====================================
 #**********************************************************
@@ -260,8 +266,8 @@ ft = display(ft,
 # have a look at the output
 ft
 # create a docx file using Word (landscape mode)
-doc = read_docx(path = "~/Desktop/test2.docx")
+doc = read_docx(path = "~/Desktop/table_out.docx")
 doc = body_add_flextable(doc, value = ft)
-print(doc, target = "~/Desktop/test2.docx")
+print(doc, target = "~/Desktop/table_out.docx")
 # caption
-#Summarizing the 20 papers that are closest to the cluster center by cluster group.
+# Summarizing the 20 papers that are closest to the cluster center by cluster group.
