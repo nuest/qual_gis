@@ -44,31 +44,33 @@ pubs[duplicated(pubs$WOS), ]  # 0, perfect
 
 # construct number of publication-per-year table (qualitative GIS)
 pubs_agg = group_by(pubs, year) %>%
-  summarize(pubs = sum(length(year))) %>%
-  mutate(pub_norm = pubs / sum(pubs)) %>%
-  arrange(year)
+  summarize(pubs = sum(length(year)))
 
 # aggregate citation-per-year table
 tc_agg = group_by(tc, year) %>%
-  summarize(tc = sum(tc)) %>%
-  mutate(tc_norm = tc / sum(tc))
+  summarize(tc = sum(tc))
 
+# join number of publications and citations
 pub_cits = inner_join(pubs_agg, tc_agg, by = "year") %>%
-  filter(year < 2017) %>%
-  dplyr::select(year, pubs, tc)
-# compute portions
+  # just keep publications which appeared prior to 2017
+  filter(year < 2017) 
+summarize_at(pub_cits, c("pubs", "tc"), sum)
+# compute percentages
 pub_cits = mutate(pub_cits,
-                  pubs = pubs / sum(pubs),
-                  tc = tc / sum(tc))
+                  pubs = pubs / sum(pubs) * 100,
+                  tc = tc / sum(tc) * 100)
 pub_cits = melt(pub_cits, id.var = "year")
 names(pub_cits) = c("year", "class", "qual_gis")
 levels(pub_cits$class) = c("Publications", "Citations")
 
 # GIS research as a whole
-# compute portions
+gis_all = filter(gis_all, PY < 2017)
+# find out the total number of studies/citations 
+summarize_at(gis_all, c("TC", "n"), sum)
+# compute percentages
 gis_all = mutate(gis_all,
-                 TC = TC / sum(TC),
-                 n = n / sum(n))
+                 TC = TC / sum(TC) * 100,
+                 n = n / sum(n) * 100)
 gis_all = melt(gis_all, id.var = "PY")
 names(gis_all) = c("year", "class", "gis_all")
 levels(gis_all$class) = c("Citations", "Publications")
@@ -76,11 +78,11 @@ levels(gis_all$class) = c("Citations", "Publications")
 gis_all$class = factor(gis_all$class, levels = c("Publications", "Citations"))
 
 # merge qual_gis studies with all_gis studies
-d = full_join(gis_all, pub_cits)
+d = full_join(gis_all, pub_cits, by = c("year", "class"))
 
 p_1 = xyplot(gis_all + qual_gis ~ year | class, data = d, type = "b",
        col = c("black", grey(0.5)),
-       ylab = list("Portions", cex = 0.8),
+       ylab = list("%", cex = 0.8),
        xlab = list("Year", cex = 0.8),
        aspect = 0.75,
        layout = c(2, 1),
