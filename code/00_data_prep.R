@@ -59,6 +59,10 @@ dbDisconnect(conn = con)
 cits = readLines(paste0("https://raw.githubusercontent.com/EricKrg/qual_gis/",
                         "master/data/qual_gis/wos_lit.txt"))
 
+# save everything in one object (just to be on the safe side)
+# save(abs_df, qual, wos, cous_key, qdata_key, gis_key, agis_key, caq_key,
+#      gdb_key, file = "images/00_raw_from_postgres_elephant.Rdata")
+
 #**********************************************************
 # 2 DATA EXPLORATION AND PREPARATION-----------------------
 #**********************************************************
