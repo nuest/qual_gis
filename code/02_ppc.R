@@ -1,6 +1,7 @@
-# Filename: table.R (2018-05-03)
+# Filename: 02_ppc.R (2018-05-03)
 #
-# TO DO: papers per country and per capita and compared to total GIS output
+# TO DO: ppc = productivity per country, i.e., qual_gis papers per country, per 
+#              capita and compared to total GIS output
 #
 # Author(s): Jannes Muenchow, Eric Krueger
 #
