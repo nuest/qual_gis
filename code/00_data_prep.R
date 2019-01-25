@@ -34,6 +34,12 @@ con = dbConnect(drv, dbname = "mzsrnrwj",
                 password = "Nv8xD1m4lY2bYKsH4Zxw9y4dE86jFcx5")
 # what tables are available
 dbListTables(con)
+# [1] "abstract"            "caqdas"              "countries"          
+# [4] "geodatabase"         "geovisual"           "gis_application"    
+# [7] "gis_software"        "main_qual_gis"       "qual_analyse"       
+# [10] "qual_data"           "qual_gis_transfer"   "tbl_online_adresses"
+# [13] "wos"    
+
 # table containing abstracts
 abs_df = dbGetQuery(con, "SELECT * FROM abstract")
 # table containing the manually collected information
