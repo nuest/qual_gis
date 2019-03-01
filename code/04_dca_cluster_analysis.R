@@ -203,10 +203,14 @@ library("factoextra")
 library("NbClust")
 
 # Elbow method - kmeans
-fviz_nbclust(scores(ord, display = "species", choices = 1:2), kmeans,
+elb = fviz_nbclust(scores(ord, display = "species", choices = 1:2), kmeans,
              method = "wss", k.max = 15) +
   geom_vline(xintercept = 4, linetype = 2) +
-  labs(subtitle = "Elbow method")
+  labs(subtitle = "") +
+  ylab("Total Within Cluster Sum of Squares")
+elb
+ggsave("figures/04_elbow.png", elb, dpi = 300, width = 14, height = 10,
+       units = "cm")
 
 # similar result when using pam
 fviz_nbclust(scores(ord, display = "species", choices = 1:2), pam, 
@@ -282,12 +286,12 @@ p_1 = ggplot(out_2) +
   # check labels in case you classify anew since categories are assigned
   # randomly meaning that "EL cluster" could be 2 next time instead of 1
   scale_fill_manual(values = pal,
-                    labels = c("TR cluster", "CU cluster",
-                               "EL cluster", "PC cluster"))
-# PC = Participatory Community cluster
-# EL = Ecology and Landscape cluster
-# TR = Theoretical Review cluster
-# CU = Children Urban cluster 
+                    labels = c("CC cluster", "HY cluster",
+                               "EL cluster", "PP cluster"))
+# PP (PC) = Theory and empiricism of Public Participation GIS
+# EL = Ecosystem services, landscapes and tourism
+# CC (TR) = Conceptional contributions to qualitative GIS
+# HY (CU) = Health, youth, and the urban environment 
 p_1
 # ggsave("figures/04_dca.png", p_1, dpi = 300, width = 18, height = 15,
 #        units = "cm")
@@ -330,7 +334,7 @@ class_pap = unlist(lapply(out, function(x) x[1, ] %>% pull(cluster)))
 table(class_pap)
 clus = data.frame(id_citavi = as.integer(rownames(mat)),
                   cluster = class_pap)
-levels(clus$cluster) = c("TR", "CU", "EL", "PC")
+levels(clus$cluster) = c("CC", "HY", "EL", "PP")
 
 # check
 head(clus)
