@@ -165,4 +165,4 @@ m = leaflet(clus) %>%
 # save your output
 # library("htmlwidgets")
 # saveWidget(m, file = file.path(getwd(), "figures/05_leaflet_clusters.html"))
-# mapview::mapshot(m, "figures/05_leaflet_clusters")
+# mapview::mapshot(m, "figures/05_leaflet_clusters.html")
