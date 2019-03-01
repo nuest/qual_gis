@@ -1,7 +1,7 @@
 # Filename: 03_alluvial.R (2018-04-30)
 #
 # TO DO:  Visualize contingency table (data collection methods, GIS methods,
-#         used GIS), i.e. create an alluvial diagram
+#         used GIS), i.e., create an alluvial diagram
 #
 #
 # Author(s): Jannes Muenchow, Eric Krueger
@@ -207,16 +207,17 @@ filter(relevant, WOS %in% ind) %>% select(fidQualData)  # NAs, good
 # so, we have to join the NA qdata again
 d = left_join(trans_soft, qdata, by = "w")
 d = select(d, -w, -year)
+
 d %<>% group_by(qdata, t, GIS) %>%
   summarise(n = n())
 colSums(is.na(d))
 filter(d, is.na(qdata) | is.na(t))
-d$t = as.character(d$t)
-d[is.na(d$t), "t"] = "NA"
-d$qdata = as.character(d$qdata)
-d[is.na(d$qdata), "qdata"] = "NA"
-# d$qdata = as.factor(d$qdata)
-# levels(d$qdata) = c("NA", names(sort(table(qdata$qdata))))
+# change "No GIS" to NA
+d[d$GIS == "No GIS", "GIS"] = NA
+# rename NA to (Missing)
+d = d %>% 
+  ungroup %>%
+  mutate_at(c("qdata", "t", "GIS"), forcats::fct_explicit_na)
 
 alluvial(d[, c(1:3)], freq = d$n, 
          col = ifelse(d$GIS == "No GIS", "grey", "orange"),
@@ -227,12 +228,16 @@ alluvial(d[, c(1:3)], freq = d$n,
 # Method 2: ggalluvial=====================================
 #**********************************************************
 library("ggalluvial")
-d$qdata = as.factor(d$qdata)
-d$t = as.factor(d$t)
-# changing factor levels leads to very strange results...
-# levels(d$t) = c("GIS extensions", "Hyperlinks", "NA", "Transformations")
-# change order of the levels
-# you have to add a final level NA
+
+# change order of the levels (relevel)
+# make sure that qdata also uses (Missing) instead of NA
+qdata$qdata = fct_explicit_na(qdata$qdata)  
+# just to make sure
+setdiff(levels(qdata$qdata), levels(d$qdata))  # 0, perfect
+setdiff(levels(d$qdata), levels(qdata$qdata))  # 0, perfect
+# relevel
+d$qdata = factor(d$qdata, levels = names(sort(table((qdata$qdata)))))
+
 # levels(d$qdata) = c("NA", names(sort(table(qdata$qdata))))
 # levels(d$GIS) = c("ArcGIS", "free GIS", "No GIS")  # this only changes the labels but not the flows...
 d_2 = to_lodes_form(d, key = "qdata", axes = c(1:2))
@@ -244,7 +249,8 @@ g = ggplot(data = d_2,
   geom_text(stat = "stratum", cex = 2.5) +
   theme_void(base_size = 6.5)  # theme_minimal()
 g
-ggsave("figures/03_alluvial.png", g, width = 15, height = 15 / 1.688, units = "cm", dpi = 300)
+ggsave("figures/03_alluvial.png", g, width = 15, height = 15 / 1.688, 
+       units = "cm", dpi = 300)
 
 # find out why there are NAs in the data collection method axes!
 # because there were NAs in the beginning!
