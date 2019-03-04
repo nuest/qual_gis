@@ -129,11 +129,11 @@ trans_soft_qd = full_join(trans_soft, qdata, by = "w")
 
 # these portions are reported in the text
 
-# used qualitative data collection methods (portions)
+# used qualitative data collection methods (don't use portions, since more than
+# one dc method might have been recorded per manuscript)
 group_by(qdata, qdata) %>%
   summarize(n = n()) %>%
-  mutate(per = n / nrow(qual) * 100) %>%
-  arrange(desc(per))
+  arrange(desc(n))
 
 # applied GIS methods (transformations; portions)
 group_by(trans_soft, t) %>%
