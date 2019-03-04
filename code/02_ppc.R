@@ -33,10 +33,10 @@ gis_all = readRDS("images/00_gis_all.rds")
 # attach population data
 data(pop, package = "wpp2015")
 
-# attach GIS studies per country
-gpc = data.table::fread("data/gis_total/gis_per_country.txt")
-# just keep the first two columns
-gpc = gpc[, 1:2]
+# attach GIS studies per country (just use the first 195 observations (last two
+# rows are just summary stats), and first two columns)
+gpc = data.table::fread("data/gis_total/gis_per_country.txt", nrow = 195, 
+                        select = 1:2)
 # rename
 names(gpc) = c("country", "n")
 gpc = as.data.frame(gpc)
@@ -139,7 +139,7 @@ tab =
 # just keep countries with > 3 qual. GIS publications
 out = filter(tab, n_qual_gis > 3) %>%
   select(-pop, -n_gis) %>%
-  mutate_at(.funs = funs(round(., 2)), .vars = c("por", "per_capita"))
+  mutate_at(.funs = list(~round(., 2)), .vars = c("por", "per_capita"))
 names(out) = c("Country", "Total",
                "in relation to all GIS studies (%)", "per capita")
 cap = paste(": Number of all qualitative GIS studies per country (Total),",
@@ -149,5 +149,6 @@ cap = paste(": Number of all qualitative GIS studies per country (Total),",
 # upload the table to the Word document
 wdGet()
 wdTable(out,
-        caption = cap, pointsize = 10, align = "l", row.names = FALSE,
+        caption = cap, pointsize = 10, align = "l", row.names = FALSE,# attach population data
+
         caption.pos = "above")
