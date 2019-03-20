@@ -139,6 +139,9 @@ clus =
 # rename levels properly
 levels(clus$cluster) = paste(levels(clus$cluster), "cluster")
 
+# save clus for Shiny-app
+saveRDS(clus, file = "images/05_clus_sf_for_shiny.rds")
+
 # popups
 clus_content = paste(
   "<b>","Title",": ","</b>", clus$title,
