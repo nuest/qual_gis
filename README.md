@@ -1,10 +1,15 @@
-# Qualitative GIS - promoting an open source approach
 
-## Overview
+## Reviewing qualitative GIS research – towards a wider usage of open source GIS and reproducible research practices
 
-This Repository holds all data and R-code which was used in the process of  
-reviewing the current literature on qualitative GIS and gives a in depth view 
-on the applied data analysis methodology. 
+This is the online code repository of the Geography Compass publication
+“Reviewing qualitative GIS research – towards a wider usage of open
+source GIS and reproducible research practices”. The
+[data](https://github.com/jannes-m/qual_gis/tree/master/data) is analzed
+in the scripts found under
+[code](https://github.com/jannes-m/qual_gis/tree/master/code).
+[images](https://github.com/jannes-m/qual_gis/tree/master/images) and
+[figures](https://github.com/jannes-m/qual_gis/tree/master/figures)
+represent the output of the corresponding analyses.
 
-
-### [Interactive Map](http://mccoy.geogr.uni-jena.de:3838/jannes/cluster_map/)
+The online version of Figure 4 can be viewed
+[here](http://mccoy.geogr.uni-jena.de:3838/jannes/cluster_map/).
