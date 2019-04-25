@@ -15,8 +15,22 @@ The online version of the figure below (Figure 4 in the manuscript) can
 be viewed
 [here](http://mccoy.geogr.uni-jena.de:3838/jannes/cluster_map/).
 
-<p align="center">
+<p align = "center">
+
+<figure>
 
 <img src="figures/05_map_cluster.png" width="100%"/>
+
+<figcaption>
+
+<font size="1">Mapping the study areas of the classified publications.
+Abbreviations: CC = Conceptional contributions to qualitative GIS; HY =
+Health, youth and the urban environment; EL = Ecology services,
+landscapes and tourism; PP = Theory and empiricism of Public
+Participation GIS. </font>
+
+</figcaption>
+
+</figure>
 
 </p>
