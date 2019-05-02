@@ -13,8 +13,7 @@ analyzed in the scripts found under
 contain the output of the corresponding analyses.
 
 The online version of the figure below (Figure 4 in the manuscript) can
-be viewed
-[here](http://mccoy.geogr.uni-jena.de:3838/jannes/cluster_map/).
+be viewed [here](http://edi.geogr.uni-jena.de:3838/jannes/cluster_map/).
 
 <p align = "center">
 

@@ -13,7 +13,7 @@ This is the online code repository of the Geography Compass publication "Reviewi
 The [data](https://github.com/jannes-m/qual_gis/tree/master/data) is analyzed in the scripts found under [code](https://github.com/jannes-m/qual_gis/tree/master/code).
 [images](https://github.com/jannes-m/qual_gis/tree/master/images) and [figures](https://github.com/jannes-m/qual_gis/tree/master/figures) contain the output of the corresponding analyses.
 
-The online version of the figure below (Figure 4 in the manuscript) can be viewed [here](http://mccoy.geogr.uni-jena.de:3838/jannes/cluster_map/).
+The online version of the figure below (Figure 4 in the manuscript) can be viewed [here](http://edi.geogr.uni-jena.de:3838/jannes/cluster_map/).
 
 <p align = "center">
   <figure>
@@ -24,3 +24,35 @@ The online version of the figure below (Figure 4 in the manuscript) can be viewe
       </figcaption>
   </figure>
 </p>
+
+```{r, echo=FALSE, eval=FALSE}
+library("leaflet")
+library("sf")
+#library("dplyr")
+
+clus = readRDS("images/05_clus_sf_for_shiny.rds")
+# popups
+clus_content = paste(
+  "<b>","Title",": ","</b>", clus$title,
+  "</br>",
+  "<b>Author(s): </b>",
+  clus$author,"</br>",
+  "<b>Year: </b>", clus$year, "</br>",
+  "<b>Cluster: </b>", clus$cluster)
+
+pal = RColorBrewer::brewer.pal("Set3", n = 6)[3:6]
+
+# leaflet
+m = leaflet(clus) %>%
+  addTiles() %>%
+  addProviderTiles(providers$CartoDB.PositronNoLabels, group = "Dark") %>%
+  addCircleMarkers(st_coordinates(clus)[, 1], st_coordinates(clus)[, 2],
+                   popup = as.character(clus_content), color = ~col,
+                   radius =  4) %>%
+  addLegend("bottomright",
+            colors = pal,
+            labels = levels(clus$cluster),
+            title = "Legend",
+            opacity = 1)
+m
+```
