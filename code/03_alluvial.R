@@ -157,7 +157,7 @@ caq = select(relevant, fidCAQDAS) %>%
   mutate(per = n / sum(n) * 100) %>%
   arrange(desc(per))
 filter(caq, CAQDAS_Typ != "NA") %>%
-  summarise_at(funs(sum), .vars = c("n", "per"))
+  summarise_at(list(~sum), .vars = c("n", "per"))
 
 # reported database usage
 setdiff(relevant$fidGeodatabase, gdb_key$idGeodatabase)
@@ -184,7 +184,7 @@ gdb = group_by(gdb, Geodatabase) %>%
   arrange(desc(per))
 
 filter(gdb, Geodatabase != "NA") %>%
-  summarize_at(funs(sum), .vars = c("n", "per"))
+  summarize_at(list(~sum), .vars = c("n", "per"))
 # however, this also includes a category named "no Database"...
 
 #**********************************************************
@@ -249,8 +249,8 @@ g = ggplot(data = d_2,
   geom_text(stat = "stratum", cex = 2.5) +
   theme_void(base_size = 6.5)  # theme_minimal()
 g
-ggsave("figures/03_alluvial.png", g, width = 15, height = 15 / 1.688, 
-       units = "cm", dpi = 300)
+ggsave("figures/03_alluvial.tif", g, device = "tiff", width = 15, height = 15 / 1.688, 
+       units = "cm", dpi = 600)
 
 # find out why there are NAs in the data collection method axes!
 # because there were NAs in the beginning!
