@@ -293,7 +293,8 @@ p_1 = ggplot(out_2) +
 # CC (TR) = Conceptional contributions to qualitative GIS
 # HY (CU) = Health, youth, and the urban environment 
 p_1
-ggsave("figures/04_dca.png", p_1, dpi = 300, width = 18, height = 16,
+ggsave("figures/04_dca.tif", p_1, device = "tiff",
+       dpi = 600, width = 18, height = 16,
        units = "cm")
 # save(p_1, "images/04_p_1.rda")
 

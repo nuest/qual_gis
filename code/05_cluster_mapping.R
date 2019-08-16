@@ -121,7 +121,7 @@ map = spplot(clus, "cluster", col.regions = pal, cex = 0.8,
 )
 
 # save your result
-png(filename = "figures/05_map_cluster.png", res = 300,
+tiff(filename = "figures/05_map_cluster.tif", res = 600,
     width = 17, height = 8, units = "cm")
 print(map)
 dev.off()
