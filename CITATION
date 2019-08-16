@@ -1,15 +1,15 @@
 Please cite this work as:
 
-Muenchow, J. and Schäfer, S. and Krüger, E. 2019. Reviewing qualitative GIS research – towards a wider usage of open source GIS and reproducible research practices. Geography Compass.
+Muenchow, J. and Schäfer, S. and Krüger, E. 2019. Reviewing qualitative GIS research – toward a wider usage of open source GIS and reproducible research practices. Geography Compass 13, 6, e12441.
 
 @article{muenchow_reviewing_2019,
-  title={Reviewing qualitative GIS research – towards a wider usage of open source GIS and reproducible research practices},
+  title={Reviewing qualitative GIS research – toward a wider usage of open source GIS and reproducible research practices},
   author={Muenchow, J. and Schäfer, S. and Krüger, E.},
   journal={Geography Compass},
-  volume={},
-  number={},
-  pages={},
+  volume={13},
+  number={6},
+  pages={e12441},
   year={2019},
   publisher={}
-  doi={}
+  doi={10.1111/gec3.12441}
 }
