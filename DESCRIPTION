@@ -1,0 +1,59 @@
+Type: Compendium
+Package: qualGISreview
+Title: This is the research compendium of the Geography Compass publication "Reviewing qualitative GIS research – towards a wider usage of open source GIS and reproducible research practices".
+Version: 0.0.1
+Authors@R: 
+    c(person(given = "Jannes",
+           family = "Muenchow",
+           role = c("aut"),
+           email = "jannes.muenchow@uni‐jena.de",
+           comment = c(ORCID = "0000-0001-7834-4717")),
+      person(given = "Daniel",
+           family = "Nuest",
+           role = c("ctb"),
+           email = "daniel.nuest@uni-muenster.de",
+           comment = c(ORCID = "0000-0002-0024-5046")))
+Description: Reviewing qualitative GIS research
+License: Apache License 2.0 | file LICENSE
+Depends: 
+    alluvial,
+    data.table,
+    dplyr,
+    factoextra,
+    flextable,
+    forcats,
+    ggalluvial,
+    ggplot2,
+    ggraph,
+    ggrepel,
+    ggthemes,
+    grid,
+    gridExtra,
+    igraph,
+    knitr,
+    lattice,
+    latticeExtra,
+    leaflet,
+    magrittr,
+    NbClust,
+    officer,
+    pacman,
+    parallel,
+    plotly,
+    R2wd,
+    RColorBrewer,
+    reshape,
+    reshape2,
+    rmarkdown,
+    RPostgreSQL,
+    sf,
+    sp,
+    spData,
+    stringr,
+    tibble,
+    tidyr,
+    tidyverse,
+    tm,
+    vegan
+Encoding: UTF-8
+LazyData: true
